@@ -18,8 +18,8 @@ class RoleAndPermissionSeeder extends Seeder
         DB::statement('SET FOREIGN_KEY_CHECKS=0;');
         
         // Vider les tables
-        DB::table('role_permissions')->truncate();
-        DB::table('user_roles')->truncate();
+        DB::table('permission_role')->truncate();
+        DB::table('role_user')->truncate();
         DB::table('permissions')->truncate();
         DB::table('roles')->truncate();
         

@@ -1,16 +1,31 @@
 'use client';
 
-import withAuth from '../components/withAuth';
+import { useAuth } from '@/app/contexts/AuthContext';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
+import withAuth from '@/app/components/withAuth';
 
-function DashboardPage() {
-    return (
-        <div className="flex items-center justify-center min-h-screen bg-gray-100">
-            <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-lg shadow-md">
-                <h1 className="text-2xl font-bold text-center text-gray-900">Dashboard</h1>
-                <p className="text-center text-gray-600">Welcome to your dashboard!</p>
-            </div>
-        </div>
-    );
+function DashboardRedirectPage() {
+    const { user } = useAuth();
+    const router = useRouter();
+
+    useEffect(() => {
+        if (user) {
+            const isAdmin = user.roles.some(role => role.name === 'admin');
+            const isEnseignant = user.roles.some(role => role.name === 'enseignant');
+
+            if (isAdmin) {
+                router.replace('/dashboard/admin');
+            } else if (isEnseignant) {
+                router.replace('/dashboard/enseignant');
+            } else {
+                router.replace('/dashboard/etudiant');
+            }
+        }
+    }, [user, router]);
+
+    // Affiche un état de chargement pendant la redirection
+    return <div>Loading dashboard...</div>;
 }
 
-export default withAuth(DashboardPage);
+export default withAuth(DashboardRedirectPage);

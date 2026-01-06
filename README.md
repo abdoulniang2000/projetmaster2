@@ -1,36 +1,132 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Projet de Plateforme E-learning (LMS)
 
-## Getting Started
+Ce projet est une application web complète de type LMS (Learning Management System) construite avec une architecture découplée : un backend en **Laravel 11** et un frontend en **Next.js 14**.
 
-First, run the development server:
+## Fonctionnalités
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+*   **Gestion des Rôles :** Administrateurs, Enseignants, Étudiants.
+*   **Authentification :** Inscription et connexion sécurisées avec Laravel Sanctum.
+*   **Gestion des Cours :** CRUD complet pour les cours (création, lecture, mise à jour, suppression).
+*   **Gestion des Devoirs :** Les enseignants peuvent créer et assigner des devoirs avec des pièces jointes.
+*   **Soumission des Devoirs :** Les étudiants peuvent soumettre leurs travaux en téléversant des fichiers.
+*   **Notation :** Les enseignants peuvent noter les soumissions et laisser des commentaires.
+*   **Messagerie Interne :** Communication en temps réel entre les utilisateurs.
+*   **Notifications :** Système de notifications pour les événements importants (ex: devoir noté).
+
+## Structure du Projet
+
+```
+/
+├── app/                # Frontend Next.js
+│   ├── (auth)/         # Groupe de routes pour l'authentification
+│   │   ├── login/
+│   │   └── register/
+│   ├── dashboard/      # Groupe de routes pour le tableau de bord
+│   │   ├── admin/
+│   │   ├── enseignant/
+│   │   ├── etudiant/
+│   │   ├── cours/
+│   │   ├── devoirs/
+│   │   └── ... (autres pages du dashboard)
+│   ├── components/     # Composants React (avec shadcn/ui)
+│   ├── contexts/       # Contexte React (AuthContext)
+│   └── ...
+├── backend/            # Backend Laravel
+│   ├── app/
+│   │   ├── Http/
+│   │   │   ├── Controllers/
+│   │   │   └── Requests/
+│   │   ├── Models/
+│   │   └── Policies/
+│   ├── config/
+│   ├── database/
+│   │   ├── migrations/
+│   │   └── seeders/
+│   └── routes/
+│       └── api.php
+├── components/         # Composants shadcn/ui (racine)
+├── lib/                # Utilitaires frontend (axios, shadcn)
+└── ...
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Installation et Lancement
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Prérequis
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+*   PHP >= 8.2
+*   Composer
+*   Node.js >= 18.x
+*   NPM
+*   Une base de données (MySQL, PostgreSQL, etc.)
 
-## Learn More
+### 1. Configuration du Backend (Laravel)
 
-To learn more about Next.js, take a look at the following resources:
+1.  **Naviguez dans le dossier `backend` :**
+    ```bash
+    cd backend
+    ```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+2.  **Installez les dépendances PHP :**
+    ```bash
+    composer install
+    ```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+3.  **Configurez votre environnement :**
+    *   Copiez le fichier `.env.example` en `.env`.
+    *   Configurez les informations de votre base de données (`DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD`).
 
-## Deploy on Vercel
+4.  **Générez la clé d'application :**
+    ```bash
+    php artisan key:generate
+    ```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+5.  **Exécutez les migrations et les seeders :**
+    *   Cela créera les tables et remplira la base de données avec des utilisateurs de test (admin, enseignant, étudiant).
+    ```bash
+    php artisan migrate --seed
+    ```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+6.  **Créez le lien de stockage :**
+    ```bash
+    php artisan storage:link
+    ```
+
+7.  **Lancez le serveur de développement Laravel :**
+    ```bash
+    php artisan serve
+    ```
+    Le backend sera accessible à l'adresse `http://localhost:8000`.
+
+### 2. Configuration du Frontend (Next.js)
+
+1.  **Naviguez à la racine du projet :**
+    ```bash
+    cd .. 
+    ```
+
+2.  **Installez les dépendances JavaScript :**
+    ```bash
+    npm install
+    ```
+
+3.  **Lancez le serveur de développement Next.js :**
+    ```bash
+    npm run dev
+    ```
+    Le frontend sera accessible à l'adresse `http://localhost:3000`.
+
+## Utilisateurs de Test
+
+Les utilisateurs suivants sont créés par les seeders :
+
+*   **Administrateur :**
+    *   Email : `admin@example.com`
+    *   Mot de passe : `password`
+
+*   **Enseignant :**
+    *   Email : `enseignant@example.com`
+    *   Mot de passe : `password`
+
+*   **Étudiant :**
+    *   Email : `etudiant@example.com`
+    *   Mot de passe : `password`

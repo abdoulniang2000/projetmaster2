@@ -1,23 +1,29 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useAuth } from '@/app/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 
-const withAuth = (WrappedComponent: React.ComponentType) => {
-    const Wrapper = (props: any) => {
+const withAuth = <P extends object>(WrappedComponent: React.ComponentType<P>) => {
+    const AuthComponent = (props: P) => {
+        const { user, isLoading } = useAuth();
         const router = useRouter();
 
         useEffect(() => {
-            const token = localStorage.getItem('auth_token');
-            if (!token) {
-                router.replace('/login');
+            if (!isLoading && !user) {
+                router.replace('/');
             }
-        }, [router]);
+        }, [user, isLoading, router]);
+
+        if (isLoading || !user) {
+            // Vous pouvez afficher un spinner de chargement ici
+            return <div>Loading...</div>;
+        }
 
         return <WrappedComponent {...props} />;
     };
 
-    return Wrapper;
+    return AuthComponent;
 };
 
 export default withAuth;
