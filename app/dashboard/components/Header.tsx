@@ -57,7 +57,7 @@ export default function Header() {
                                     </Avatar>
                                 </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent className="w-64" align="end" forceMount>
+                            <DropdownMenuContent className="w-64 bg-white border border-gray-200 shadow-lg" align="end" forceMount>
                                 <DropdownMenuLabel className="font-normal">
                                     <div className="flex flex-col space-y-2 p-2">
                                         <div className="flex items-center space-x-3">
@@ -77,10 +77,10 @@ export default function Header() {
                                                 <span
                                                     key={index}
                                                     className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${role.name === 'admin'
-                                                            ? 'bg-orange-100 text-orange-800'
-                                                            : role.name === 'enseignant'
-                                                                ? 'bg-blue-100 text-blue-800'
-                                                                : 'bg-green-100 text-green-800'
+                                                        ? 'bg-orange-100 text-orange-800'
+                                                        : role.name === 'enseignant'
+                                                            ? 'bg-blue-100 text-blue-800'
+                                                            : 'bg-green-100 text-green-800'
                                                         }`}
                                                 >
                                                     {role.name}

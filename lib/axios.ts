@@ -23,6 +23,21 @@ axiosInstance.interceptors.request.use((config) => {
 axiosInstance.interceptors.response.use(
     (response) => response,
     (error) => {
+        console.error('=== AXIOS ERROR INTERCEPTOR ===');
+        console.error('Error details:', {
+            message: error.message,
+            code: error.code,
+            status: error.response?.status,
+            statusText: error.response?.statusText,
+            data: error.response?.data,
+            config: {
+                url: error.config?.url,
+                method: error.config?.method,
+                baseURL: error.config?.baseURL,
+                headers: error.config?.headers
+            }
+        });
+
         if (error.response?.status === 401) {
             localStorage.removeItem('auth_token');
             delete axiosInstance.defaults.headers.common['Authorization'];

@@ -28,7 +28,7 @@ export const useToast = () => {
     }, []);
 
     const success = useCallback((message: string) => addToast(message, 'success'), [addToast]);
-    const error = useCallback((message: string) => addToast(message, 'error'), [addToast]);
+    const errorToast = useCallback((message: string) => addToast(message, 'error'), [addToast]);
     const warning = useCallback((message: string) => addToast(message, 'warning'), [addToast]);
     const info = useCallback((message: string) => addToast(message, 'info'), [addToast]);
 
@@ -37,7 +37,7 @@ export const useToast = () => {
         addToast,
         removeToast,
         success,
-        error,
+        error: errorToast,
         warning,
         info
     };

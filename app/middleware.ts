@@ -13,8 +13,10 @@ export function middleware(request: NextRequest) {
         return NextResponse.redirect(new URL('/dashboard', request.url));
     }
 
-    // Ne pas bloquer l'accès au dashboard - laisser le composant withAuth gérer l'authentification côté client
-    // Le middleware ne fait que rediriger les utilisateurs déjà authentifiés loin de la page de connexion
+    // Si l'utilisateur n'a pas de token et essaie d'accéder au dashboard, le rediriger vers la page de connexion
+    if (!token && isDashboardPage) {
+        return NextResponse.redirect(new URL('/', request.url));
+    }
 
     return NextResponse.next();
 }

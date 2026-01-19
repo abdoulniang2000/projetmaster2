@@ -26,18 +26,38 @@ class UserController extends Controller
     {
         // $this->authorize('create', User::class);
         
-        $userData = $request->validated();
-        $userData['password'] = Hash::make($request->password);
-        
-        $user = User::create($userData);
+        try {
+            \Log::info('Tentative de création d\'utilisateur', ['data' => $request->validated()]);
+            
+            $userData = $request->validated();
+            $userData['password'] = Hash::make($request->password);
+            $userData['status'] = true; // Activer par défaut
+            
+            $user = User::create($userData);
+            \Log::info('Utilisateur créé avec succès', ['user_id' => $user->id]);
 
-        // Assigner le rôle spécifié
-        $role = \App\Models\Role::where('name', $request->role)->first();
-        if ($role) {
-            $user->roles()->attach($role);
+            // Assigner le rôle spécifié
+            $role = \App\Models\Role::where('name', $request->role)->first();
+            if ($role) {
+                $user->roles()->attach($role);
+                \Log::info('Rôle assigné à l\'utilisateur', ['user_id' => $user->id, 'role' => $role->name]);
+            } else {
+                \Log::warning('Rôle non trouvé', ['role' => $request->role]);
+            }
+
+            return response()->json($user->load('roles'), 201);
+            
+        } catch (\Exception $e) {
+            \Log::error('Erreur lors de la création de l\'utilisateur', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'message' => 'Erreur lors de la création de l\'utilisateur',
+                'error' => $e->getMessage()
+            ], 500);
         }
-
-        return response()->json($user->load('roles'), 201);
     }
 
     /**

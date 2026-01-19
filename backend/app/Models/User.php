@@ -29,6 +29,8 @@ class User extends Authenticatable
         'city',
         'country',
         'postal_code',
+        'department',
+        'student_id',
         'about',
         'avatar',
         'status',

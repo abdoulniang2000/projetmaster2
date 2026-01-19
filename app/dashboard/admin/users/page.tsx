@@ -137,13 +137,9 @@ function UsersManagementPage() {
     };
 
     const handleAddUser = async () => {
-        console.log('=== handleAddUser appelé ===');
-        console.log('newUser:', newUser);
-
         try {
             // Validation basique
             if (!newUser.first_name || !newUser.last_name || !newUser.email || !newUser.password || !newUser.role) {
-                console.log('Validation échouée: champs manquants');
                 warning('Veuillez remplir tous les champs obligatoires');
                 return;
             }
@@ -151,22 +147,18 @@ function UsersManagementPage() {
             // Validation email
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
             if (!emailRegex.test(newUser.email)) {
-                console.log('Validation échouée: email invalide');
                 warning('Veuillez entrer une adresse email valide');
                 return;
             }
 
             if (newUser.password.length < 6) {
-                console.log('Validation échouée: mot de passe trop court');
                 warning('Le mot de passe doit contenir au moins 6 caractères');
                 return;
             }
 
             setIsAddingUser(true);
-            console.log('Envoi des données utilisateur:', newUser);
 
             const response = await axios.post('/v1/users', newUser);
-            console.log('Réponse du serveur:', response.data);
 
             // Succès
             success('Utilisateur ajouté avec succès!');
@@ -188,29 +180,32 @@ function UsersManagementPage() {
             const usersRes = await axios.get('/v1/users');
             setUsers(usersRes.data || []);
 
-        } catch (error: any) {
-            console.error('Erreur lors de l\'ajout de l\'utilisateur:', error);
-            console.error('Détails de l\'erreur:', {
-                message: error.message,
-                response: error.response?.data,
-                status: error.response?.status
-            });
+        } catch (err: any) {
+            console.error('Erreur lors de l\'ajout de l\'utilisateur:', err);
 
-            // Gérer les erreurs spécifiques
-            if (error.response?.status === 422) {
+            // Afficher les détails de l'erreur pour le debugging
+            if (err.code === 'ERR_NETWORK') {
+                error('Impossible de se connecter au serveur. Vérifiez que le backend est démarré.');
+            } else if (err.code === 'ECONNREFUSED') {
+                error('Connexion refusée. Le serveur backend est probablement arrêté.');
+            } else if (err.response?.status === 422) {
                 // Erreur de validation
-                const validationErrors = error.response.data.errors;
+                const validationErrors = err.response.data.errors;
                 const errorMessage = Object.values(validationErrors).flat().join(', ');
                 error('Erreur de validation: ' + errorMessage);
-            } else if (error.response?.status === 409) {
+            } else if (err.response?.status === 409) {
                 // Email déjà existant
                 error('Cet email est déjà utilisé par un autre utilisateur');
-            } else if (error.response?.status === 403) {
+            } else if (err.response?.status === 403) {
                 // Permission refusée
                 error('Vous n\'avez pas les permissions pour ajouter un utilisateur');
+            } else if (err.response?.status === 500) {
+                // Erreur serveur
+                error('Erreur serveur interne. Vérifiez les logs Laravel.');
             } else {
-                // Erreur générique
-                error('Une erreur est survenue lors de l\'ajout de l\'utilisateur. Veuillez réessayer.');
+                // Erreur générique avec plus de détails
+                const errorMessage = err.response?.data?.message || err.message || 'Erreur inconnue';
+                error('Une erreur est survenue: ' + errorMessage);
             }
         } finally {
             setIsAddingUser(false);
@@ -713,7 +708,6 @@ function UsersManagementPage() {
                         </div>
 
                         <form onSubmit={(e) => {
-                            console.log('=== Formulaire soumis ===');
                             e.preventDefault();
                             handleAddUser();
                         }} className="space-y-6">
@@ -845,17 +839,6 @@ function UsersManagementPage() {
                                     className="px-6 py-3 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-all duration-200 font-medium"
                                 >
                                     Annuler
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        console.log('=== Bouton test cliqué ===');
-                                        console.log('newUser actuel:', newUser);
-                                        handleAddUser();
-                                    }}
-                                    className="mb-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-                                >
-                                    🧪 TESTER handleAddUser
                                 </button>
                                 <button
                                     type="submit"

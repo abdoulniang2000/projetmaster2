@@ -349,3 +349,15 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--orange-primary);
 }
+
+/* Fix for dropdown menu transparency */
+[data-radix-dropdown-menu-content] {
+  background-color: white !important;
+  opacity: 1 !important;
+  backdrop-filter: none !important;
+  z-index: 9999 !important;
+}
+
+[data-radix-dropdown-menu-item] {
+  opacity: 1 !important;
+}

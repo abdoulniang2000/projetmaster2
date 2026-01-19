@@ -32,11 +32,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             // Ajouter le token aux en-têtes par défaut d'Axios
             axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
 
+            // Synchroniser le token avec les cookies pour le middleware
+            document.cookie = `auth_token=${token}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax`;
+
             axios.get('/v1/user').then(response => {
                 setUser(response.data);
             }).catch(() => {
                 localStorage.removeItem('auth_token');
                 delete axios.defaults.headers.common['Authorization'];
+                // Supprimer aussi le cookie
+                document.cookie = 'auth_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
             }).finally(() => {
                 setIsLoading(false);
             });
@@ -75,6 +80,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
             // Ajouter le token aux en-têtes par défaut d'Axios
             axios.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
+
+            // Synchroniser le token avec les cookies pour le middleware
+            document.cookie = `auth_token=${access_token}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax`;
 
             // Vérifier les données utilisateur
             if (!user || !user.id) {
@@ -123,6 +131,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             localStorage.removeItem('auth_token');
             setUser(null);
             delete axios.defaults.headers.common['Authorization'];
+            // Supprimer aussi le cookie
+            document.cookie = 'auth_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
             // Redirection vers la page d'accueil (page de connexion)
             router.push('/');
         }
