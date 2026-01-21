@@ -13,6 +13,7 @@ const studentLinks = [
     { href: '/dashboard/etudiant/notes', label: 'Notes & Feedback', icon: Award, color: 'indigo' },
     { href: '/dashboard/etudiant/forums', label: 'Forums', icon: MessageCircle, color: 'yellow' },
     { href: '/dashboard/etudiant/calendrier', label: 'Calendrier', icon: Calendar, color: 'red' },
+    { href: '/dashboard/messagerie', label: 'Messagerie', icon: MessageSquare, color: 'blue' },
 ];
 
 const enseignantLinks = [
@@ -23,6 +24,7 @@ const enseignantLinks = [
     { href: '/dashboard/enseignant/corrections', label: 'Corrections', icon: CheckCircle, color: 'indigo' },
     { href: '/dashboard/enseignant/annonces', label: 'Annonces', icon: Bell, color: 'yellow' },
     { href: '/dashboard/enseignant/etudiants', label: 'Gestion Étudiants', icon: Users, color: 'red' },
+    { href: '/dashboard/messagerie', label: 'Messagerie', icon: MessageSquare, color: 'blue' },
 ];
 
 const adminLinks = [
@@ -32,10 +34,10 @@ const adminLinks = [
     { href: '/dashboard/admin/messages', label: 'Messagerie', icon: Mail, color: 'purple' },
     { href: '/dashboard/admin/notifications', label: 'Notifications', icon: Bell, color: 'indigo' },
     { href: '/dashboard/admin/profile', label: 'Profil', icon: User, color: 'yellow' },
+    { href: '/dashboard/messagerie', label: 'Messagerie Interne', icon: MessageSquare, color: 'blue' },
 ];
 
 const commonLinks = [
-    { href: '/dashboard/messagerie', label: 'Messagerie', icon: MessageSquare, color: 'blue' },
     { href: '/dashboard/notifications', label: 'Notifications', icon: Bell, color: 'orange' },
     { href: '/dashboard/profil', label: 'Profil', icon: User, color: 'green' },
 ];
@@ -54,10 +56,8 @@ export default function Sidebar() {
         else if (isEnseignant) navLinks = [...enseignantLinks];
         else navLinks = [...studentLinks];
 
-        // Ajouter les liens communs seulement pour les non-admins
-        if (!isAdmin) {
-            navLinks = [...navLinks, ...commonLinks];
-        }
+        // Ajouter les liens communs pour tous les utilisateurs
+        navLinks = [...navLinks, ...commonLinks];
     }
 
     const getColorClasses = (color: string, isActive: boolean) => {
@@ -118,16 +118,16 @@ export default function Sidebar() {
     };
 
     return (
-        <aside className="w-72 bg-white/95 backdrop-blur-lg border-r border-gray-200/50 shadow-xl flex flex-col animate-fadeInLeft">
+        <aside className="w-66 bg-white/95 backdrop-blur-lg border-r border-gray-200/50 shadow-xl flex flex-col animate-fadeInLeft">
             {/* Logo et titre */}
             <div className="p-6 border-b border-gray-200/50">
                 <div className="flex items-center space-x-3">
                     <div className="w-10 h-10 bg-gradient-to-br from-orange-400 via-blue-500 to-green-500 rounded-xl flex items-center justify-center animate-pulse-slow">
-                        <span className="text-white font-bold text-lg">L</span>
+                        <span className="text-white font-bold text-lg">C</span>
                     </div>
                     <div>
                         <h1 className="text-xl font-bold bg-gradient-to-r from-orange-600 via-blue-600 to-green-600 bg-clip-text text-transparent">
-                            LMS Platform
+                            CampusMaster
                         </h1>
                         <p className="text-xs text-gray-500">Espace d'apprentissage</p>
                     </div>

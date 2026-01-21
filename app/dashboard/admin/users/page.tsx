@@ -40,6 +40,7 @@ interface Role {
 interface NewUser {
     first_name: string;
     last_name: string;
+    username: string;
     email: string;
     password: string;
     role: string;
@@ -77,6 +78,7 @@ function UsersManagementPage() {
     const [newUser, setNewUser] = useState<NewUser>({
         first_name: '',
         last_name: '',
+        username: '',
         email: '',
         password: '',
         role: 'etudiant',
@@ -144,7 +146,7 @@ function UsersManagementPage() {
     const handleAddUser = async () => {
         try {
             // Validation basique
-            if (!newUser.first_name || !newUser.last_name || !newUser.email || !newUser.password || !newUser.role) {
+            if (!newUser.first_name || !newUser.last_name || !newUser.username || !newUser.email || !newUser.password || !newUser.role) {
                 warning('Veuillez remplir tous les champs obligatoires');
                 return;
             }
@@ -173,6 +175,7 @@ function UsersManagementPage() {
             setNewUser({
                 first_name: '',
                 last_name: '',
+                username: '',
                 email: '',
                 password: '',
                 role: 'etudiant',
@@ -724,6 +727,20 @@ function UsersManagementPage() {
                                         onChange={(e) => setNewUser({ ...newUser, last_name: e.target.value })}
                                     />
                                 </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Nom d'utilisateur <span className="text-red-500">*</span>
+                                </label>
+                                <input
+                                    type="text"
+                                    required
+                                    className="input-gradient w-full px-4 py-3"
+                                    placeholder="Entrez le nom d'utilisateur"
+                                    value={newUser.username}
+                                    onChange={(e) => setNewUser({ ...newUser, username: e.target.value })}
+                                />
                             </div>
 
                             <div>

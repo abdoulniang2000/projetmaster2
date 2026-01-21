@@ -68,6 +68,9 @@ Route::prefix('v1')->group(function () {
             return $request->user();
         });
 
+        // Analytics
+        Route::get('/analytics/dashboard', [\App\Http\Controllers\Api\V1\AnalyticsController::class, 'dashboard']);
+
         // User CRUD
         Route::apiResource('users', \App\Http\Controllers\UserController::class);
         

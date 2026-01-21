@@ -4,69 +4,132 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Message extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['expediteur_id', 'destinataire_id', 'contenu', 'sujet', 'tags', 'is_urgent', 'is_read', 'read_at', 'groupe_id'];
-
-    protected $casts = [
-        'tags' => 'json',
-        'is_urgent' => 'boolean',
-        'is_read' => 'boolean',
-        'read_at' => 'datetime'
+    protected $fillable = [
+        'conversation_id',
+        'expediteur_id',
+        'contenu',
+        'type',
+        'fichier_path',
+        'fichier_nom',
+        'fichier_taille',
+        'lien_url',
+        'lien_titre',
+        'est_edite',
+        'date_edition',
+        'est_supprime',
+        'date_suppression',
+        'date_envoi',
+        'visible'
     ];
 
-    public function expediteur()
+    protected $casts = [
+        'date_edition' => 'datetime',
+        'date_suppression' => 'datetime',
+        'date_envoi' => 'datetime',
+        'est_edite' => 'boolean',
+        'est_supprime' => 'boolean',
+        'visible' => 'boolean'
+    ];
+
+    public function conversation(): BelongsTo
+    {
+        return $this->belongsTo(Conversation::class);
+    }
+
+    public function expediteur(): BelongsTo
     {
         return $this->belongsTo(User::class, 'expediteur_id');
     }
 
-    public function destinataire()
+    public function tags(): HasMany
     {
-        return $this->belongsTo(User::class, 'destinataire_id');
+        return $this->hasMany(MessageTag::class);
     }
 
-    public function groupe()
+    public function scopeVisible($query)
     {
-        return $this->belongsTo(Cours::class, 'groupe_id');
+        return $query->where('visible', true)->where('est_supprime', false);
     }
 
-    public function fichiers()
+    public function scopeByType($query, $type)
     {
-        return $this->morphMany(Fichier::class, 'fichierable');
+        return $query->where('type', $type);
     }
 
-    public function scopeNonLu($query)
+    public function scopeByConversation($query, $conversationId)
     {
-        return $query->where('is_read', false);
+        return $query->where('conversation_id', $conversationId);
     }
 
-    public function scopeUrgent($query)
+    public function scopeChronologique($query)
     {
-        return $query->where('is_urgent', true);
+        return $query->orderBy('date_envoi', 'asc');
     }
 
-    public function scopeParTag($query, $tag)
+    public function scopeRecent($query)
     {
-        return $query->whereJsonContains('tags', $tag);
+        return $query->orderBy('date_envoi', 'desc');
     }
 
-    public function marquerCommeLu()
+    public function editer($nouveauContenu)
     {
         $this->update([
-            'is_read' => true,
-            'read_at' => now()
+            'contenu' => $nouveauContenu,
+            'est_edite' => true,
+            'date_edition' => now()
         ]);
     }
 
-    public function addTag($tag)
+    public function supprimer()
     {
-        $tags = $this->tags ?? [];
-        if (!in_array($tag, $tags)) {
-            $tags[] = $tag;
-            $this->update(['tags' => $tags]);
-        }
+        $this->update([
+            'est_supprime' => true,
+            'date_suppression' => now(),
+            'visible' => false
+        ]);
+    }
+
+    public function ajouterTag($tag, $userId, $couleur = '#3b82f6')
+    {
+        $this->tags()->create([
+            'user_id' => $userId,
+            'tag' => $tag,
+            'couleur' => $couleur,
+            'date_creation' => now()
+        ]);
+    }
+
+    public function getTagsListe()
+    {
+        return $this->tags()->pluck('tag')->toArray();
+    }
+
+    public function aDesTags()
+    {
+        return $this->tags()->exists();
+    }
+
+    protected static function booted()
+    {
+        static::created(function ($message) {
+            // Mettre à jour la conversation
+            $message->conversation->mettreAJourDernierMessage(
+                $message->contenu,
+                $message->expediteur->name
+            );
+
+            // Marquer les messages comme non lus pour les autres participants
+            $message->conversation->participants()
+                ->where('user_id', '!=', $message->expediteur_id)
+                ->where('active', true)
+                ->increment('nombre_messages_non_lus');
+        });
     }
 }

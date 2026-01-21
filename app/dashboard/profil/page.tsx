@@ -5,8 +5,7 @@ import ProfileForm from '../components/ProfileForm';
 
 function ProfilPage() {
     return (
-        <div>
-            <h1 className="text-3xl font-bold mb-6">Mon Profil</h1>
+        <div className="space-y-6 animate-fadeInUp">
             <ProfileForm />
         </div>
     );

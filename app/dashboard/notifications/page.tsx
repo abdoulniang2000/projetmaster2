@@ -5,8 +5,7 @@ import NotificationList from '../components/NotificationList';
 
 function NotificationsPage() {
     return (
-        <div>
-            <h1 className="text-3xl font-bold mb-6">Mes Notifications</h1>
+        <div className="space-y-6 animate-fadeInUp">
             <NotificationList />
         </div>
     );

@@ -27,17 +27,29 @@ class UserController extends Controller
         // $this->authorize('create', User::class);
         
         try {
-            \Log::info('Tentative de création d\'utilisateur', ['data' => $request->validated()]);
+            \Log::info('Tentative de création d\'utilisateur', ['data' => $request->all()]);
             
             $userData = $request->validated();
             $userData['password'] = Hash::make($request->password);
             $userData['status'] = true; // Activer par défaut
-            $userData['role'] = $request->role; // Utiliser la colonne role existante
+            $userData['role'] = $request->role ?? 'etudiant'; // Utiliser la colonne role existante
             
+            // Créer l'utilisateur
             $user = User::create($userData);
             \Log::info('Utilisateur créé avec succès', ['user_id' => $user->id]);
 
-            return response()->json($user, 201);
+            // Assigner le rôle dans la table user_roles
+            $roleName = $request->role ?? 'etudiant';
+            $role = \App\Models\Role::where('name', $roleName)->first();
+            
+            if ($role) {
+                $user->roles()->attach($role->id);
+                \Log::info('Rôle assigné', ['user_id' => $user->id, 'role' => $roleName]);
+            } else {
+                \Log::warning('Rôle non trouvé', ['role' => $roleName]);
+            }
+
+            return response()->json($user->load('roles'), 201);
             
         } catch (\Exception $e) {
             \Log::error('Erreur lors de la création de l\'utilisateur', [

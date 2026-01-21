@@ -159,7 +159,7 @@ function NotificationCenterPage() {
             const messagesRes = await axios.get(`/v1/conversations/${selectedConversation.id}/messages`);
             // Mettre à jour les messages de la conversation
         } catch (error) {
-            console.error('Erreur lors de l\\'envoi du message: ', error);
+            console.error('Erreur lors de l\'envoi du message: ', error);
         }
     };
 
@@ -178,7 +178,7 @@ function NotificationCenterPage() {
             const messagesRes = await axios.get('/v1/messages');
             setMessages(messagesRes.data || []);
         } catch (error) {
-            console.error('Erreur lors de l\\'envoi du message: ', error);
+            console.error('Erreur lors de l\'envoi du message: ', error);
         }
     };
 
@@ -196,7 +196,7 @@ function NotificationCenterPage() {
             await axios.put(`/v1/conversations/${conversationId}/archive`);
             setConversations(prev => prev.filter(c => c.id !== conversationId));
         } catch (error) {
-            console.error('Erreur lors de l\\'archivage: ', error);
+            console.error('Erreur lors de l\'archivage: ', error);
         }
     };
 
@@ -260,8 +260,8 @@ function NotificationCenterPage() {
                 <button
                     onClick={() => setActiveTab('notifications')}
                     className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${activeTab === 'notifications'
-                            ? 'bg-white text-blue-600 shadow-sm'
-                            : 'text-gray-600 hover:text-gray-900'
+                        ? 'bg-white text-blue-600 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
                         }`}
                 >
                     <Bell className="w-4 h-4" />
@@ -275,8 +275,8 @@ function NotificationCenterPage() {
                 <button
                     onClick={() => setActiveTab('messages')}
                     className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${activeTab === 'messages'
-                            ? 'bg-white text-blue-600 shadow-sm'
-                            : 'text-gray-600 hover:text-gray-900'
+                        ? 'bg-white text-blue-600 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
                         }`}
                 >
                     <MessageSquare className="w-4 h-4" />
@@ -290,8 +290,8 @@ function NotificationCenterPage() {
                 <button
                     onClick={() => setActiveTab('conversations')}
                     className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${activeTab === 'conversations'
-                            ? 'bg-white text-blue-600 shadow-sm'
-                            : 'text-gray-600 hover:text-gray-900'
+                        ? 'bg-white text-blue-600 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
                         }`}
                 >
                     <Users className="w-4 h-4" />
@@ -589,8 +589,8 @@ function NotificationCenterPage() {
                             <div
                                 key={conversation.id}
                                 className={`p-3 rounded-lg border cursor-pointer transition-all hover:shadow-md ${selectedConversation?.id === conversation.id
-                                        ? 'bg-blue-50 border-blue-200'
-                                        : 'bg-white border-gray-200'
+                                    ? 'bg-blue-50 border-blue-200'
+                                    : 'bg-white border-gray-200'
                                     }`}
                                 onClick={() => setSelectedConversation(conversation)}
                             >

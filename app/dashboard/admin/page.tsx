@@ -65,12 +65,14 @@ function AdminDashboardPage() {
         const fetchDashboardData = async () => {
             try {
                 const [analyticsRes, usersRes, coursesRes] = await Promise.all([
-                    axios.get('/v1/analytics/dashboard'),
-                    axios.get('/v1/users'),
-                    axios.get('/v1/cours')
+                    axios.get('/v1/analytics/dashboard').catch(() => ({ data: { stats: { utilisateurs: { total: 0, actifs: 0 } } } })),
+                    axios.get('/v1/users').catch(() => ({ data: [] })),
+                    axios.get('/v1/cours').catch(() => ({ data: [] }))
                 ]);
 
                 const analyticsData = analyticsRes.data;
+                const users = usersRes.data || [];
+                const cours = coursesRes.data || [];
 
                 const devoirs: any[] = [];
                 const soumissions: any[] = [];
