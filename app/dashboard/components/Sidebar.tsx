@@ -3,12 +3,16 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/app/contexts/AuthContext';
-import { Home, Book, Edit3, MessageSquare, User, Bell, Shield, LogOut, Settings, Users, BookOpen, Mail, BarChart3, CheckCircle } from 'lucide-react';
+import { Home, Book, Edit3, MessageSquare, User, Bell, Shield, LogOut, Settings, Users, BookOpen, Mail, BarChart3, CheckCircle, Download, FileText, MessageCircle, Calendar, Award, Clock, Upload } from 'lucide-react';
 
 const studentLinks = [
     { href: '/dashboard/etudiant', label: 'Dashboard', icon: Home, color: 'orange' },
-    { href: '/dashboard/cours', label: 'Mes Cours', icon: Book, color: 'blue' },
-    { href: '/dashboard/notes', label: 'Mes Notes', icon: Edit3, color: 'green' },
+    { href: '/dashboard/etudiant/cours', label: 'Mes Cours', icon: Book, color: 'blue' },
+    { href: '/dashboard/etudiant/supports', label: 'Supports de cours', icon: Download, color: 'green' },
+    { href: '/dashboard/etudiant/devoirs', label: 'Dépôt de devoirs', icon: Upload, color: 'purple' },
+    { href: '/dashboard/etudiant/notes', label: 'Notes & Feedback', icon: Award, color: 'indigo' },
+    { href: '/dashboard/etudiant/forums', label: 'Forums', icon: MessageCircle, color: 'yellow' },
+    { href: '/dashboard/etudiant/calendrier', label: 'Calendrier', icon: Calendar, color: 'red' },
 ];
 
 const enseignantLinks = [
@@ -72,6 +76,8 @@ export default function Sidebar() {
                     return `${baseClasses} bg-gradient-to-r from-indigo-500 to-indigo-600 text-white shadow-lg shadow-indigo-500/25`;
                 case 'yellow':
                     return `${baseClasses} bg-gradient-to-r from-yellow-500 to-yellow-600 text-white shadow-lg shadow-yellow-500/25`;
+                case 'red':
+                    return `${baseClasses} bg-gradient-to-r from-red-500 to-red-600 text-white shadow-lg shadow-red-500/25`;
                 default:
                     return `${baseClasses} bg-gradient-to-r from-gray-500 to-gray-600 text-white`;
             }
@@ -89,6 +95,8 @@ export default function Sidebar() {
                     return `${baseClasses} hover:bg-gradient-to-r hover:from-indigo-100 hover:to-indigo-200 hover:text-indigo-700 text-gray-700`;
                 case 'yellow':
                     return `${baseClasses} hover:bg-gradient-to-r hover:from-yellow-100 hover:to-yellow-200 hover:text-yellow-700 text-gray-700`;
+                case 'red':
+                    return `${baseClasses} hover:bg-gradient-to-r hover:from-red-100 hover:to-red-200 hover:text-red-700 text-gray-700`;
                 default:
                     return `${baseClasses} hover:bg-gray-100 text-gray-700`;
             }
@@ -104,6 +112,7 @@ export default function Sidebar() {
             case 'purple': return 'text-purple-500';
             case 'indigo': return 'text-indigo-500';
             case 'yellow': return 'text-yellow-500';
+            case 'red': return 'text-red-500';
             default: return 'text-gray-500';
         }
     };

@@ -10,14 +10,22 @@ const buttonVariants = cva(
         variants: {
             variant: {
                 default:
-                    "bg-primary text-primary-foreground hover:bg-primary/90",
+                    "bg-gradient-to-r from-orange-500 to-blue-500 text-white hover:from-orange-600 hover:to-blue-600 shadow-lg shadow-orange-500/25",
+                orange:
+                    "bg-gradient-to-r from-orange-500 to-orange-600 text-white hover:from-orange-600 hover:to-orange-700 shadow-lg shadow-orange-500/25",
+                blue:
+                    "bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700 shadow-lg shadow-blue-500/25",
+                green:
+                    "bg-gradient-to-r from-green-500 to-green-600 text-white hover:from-green-600 hover:to-green-700 shadow-lg shadow-green-500/25",
+                primary:
+                    "bg-gradient-to-r from-orange-500 via-blue-500 to-green-500 text-white hover:from-orange-600 hover:via-blue-600 hover:to-green-600 shadow-lg shadow-orange-500/25",
                 destructive:
-                    "bg-destructive text-destructive-foreground hover:bg-destructive/90",
-                outline: "border border-input bg-background hover:bg-accent hover:text-accent-foreground",
+                    "bg-red-500 text-white hover:bg-red-600 shadow-lg shadow-red-500/25",
+                outline: "border-2 border-gray-300 bg-white hover:bg-gray-50 text-gray-900",
                 secondary:
-                    "bg-secondary text-secondary-foreground hover:bg-secondary/80",
-                ghost: "hover:bg-accent hover:text-accent-foreground",
-                link: "text-primary underline-offset-4 hover:underline",
+                    "bg-gray-100 text-gray-900 hover:bg-gray-200",
+                ghost: "hover:bg-gray-100 text-gray-900",
+                link: "text-blue-600 underline-offset-4 hover:underline",
             },
             size: {
                 default: "h-10 px-4 py-2",

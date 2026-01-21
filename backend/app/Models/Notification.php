@@ -4,58 +4,89 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Notification extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['type', 'titre', 'contenu', 'metadonnees', 'is_push', 'is_email', 'sent_at', 'notifiable_type', 'notifiable_id', 'read_at'];
-
-    protected $casts = [
-        'metadonnees' => 'json',
-        'is_push' => 'boolean',
-        'is_email' => 'boolean',
-        'sent_at' => 'datetime',
-        'read_at' => 'datetime'
+    protected $fillable = [
+        'titre',
+        'message',
+        'type',
+        'categorie',
+        'user_id',
+        'lue',
+        'priorite',
+        'action_url',
+        'action_label',
+        'date_creation',
+        'expire_le',
+        'visible'
     ];
 
-    public function notifiable()
+    protected $casts = [
+        'date_creation' => 'datetime',
+        'expire_le' => 'datetime',
+        'lue' => 'boolean',
+        'visible' => 'boolean'
+    ];
+
+    public function user(): BelongsTo
     {
-        return $this->morphTo();
+        return $this->belongsTo(User::class);
     }
 
-    public function scopeNonLu($query)
+    public function scopeVisible($query)
     {
-        return $query->whereNull('read_at');
+        return $query->where('visible', true);
     }
 
-    public function scopeLu($query)
+    public function scopeNonExpire($query)
     {
-        return $query->whereNotNull('read_at');
+        return $query->where(function ($q) {
+            $q->whereNull('expire_le')
+              ->orWhere('expire_le', '>', now());
+        });
     }
 
-    public function scopeType($query, $type)
+    public function scopeByUser($query, $userId)
+    {
+        return $query->where('user_id', $userId);
+    }
+
+    public function scopeByType($query, $type)
     {
         return $query->where('type', $type);
     }
 
-    public function scopePush($query)
+    public function scopeByCategorie($query, $categorie)
     {
-        return $query->where('is_push', true);
+        return $query->where('categorie', $categorie);
     }
 
-    public function scopeEmail($query)
+    public function scopeByPriorite($query, $priorite)
     {
-        return $query->where('is_email', true);
+        return $query->where('priorite', $priorite);
     }
 
-    public function marquerCommeLu()
+    public function scopeNonLues($query)
     {
-        $this->update(['read_at' => now()]);
+        return $query->where('lue', false);
     }
 
-    public function estLu()
+    public function scopeLues($query)
     {
-        return !is_null($this->read_at);
+        return $query->where('lue', true);
+    }
+
+    public function marquerCommeLue(): void
+    {
+        $this->update(['lue' => true]);
+    }
+
+    public function estExpiree(): bool
+    {
+        return $this->expire_le && now()->gt($this->expire_le);
     }
 }

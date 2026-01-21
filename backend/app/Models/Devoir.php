@@ -4,43 +4,62 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Devoir extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['cours_id', 'titre', 'description', 'date_limite', 'fichier_joint', 'note_maximale', 'is_published', 'allow_late_submission', 'instructions'];
-
-    protected $casts = [
-        'date_limite' => 'datetime',
-        'note_maximale' => 'integer',
-        'is_published' => 'boolean',
-        'allow_late_submission' => 'boolean'
+    protected $fillable = [
+        'titre',
+        'description',
+        'type',
+        'cours_id',
+        'instructeur_id',
+        'date_publication',
+        'date_limite',
+        'ponderation',
+        'instructions',
+        'fichier_instructions_path',
+        'visible'
     ];
 
-    public function cours()
+    protected $casts = [
+        'date_publication' => 'datetime',
+        'date_limite' => 'datetime',
+        'ponderation' => 'integer',
+        'visible' => 'boolean'
+    ];
+
+    public function cours(): BelongsTo
     {
         return $this->belongsTo(Cours::class);
     }
 
-    public function soumissions()
+    public function instructeur(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'instructeur_id');
+    }
+
+    public function soumissions(): HasMany
     {
         return $this->hasMany(Soumission::class);
     }
 
-    public function fichiers()
+    public function scopeVisible($query)
     {
-        return $this->morphMany(Fichier::class, 'fichierable');
+        return $query->where('visible', true);
     }
 
-    public function notes()
+    public function scopeByType($query, $type)
     {
-        return $this->hasManyThrough(Note::class, Soumission::class);
+        return $query->where('type', $type);
     }
 
-    public function scopePublie($query)
+    public function scopeByCours($query, $coursId)
     {
-        return $query->where('is_published', true);
+        return $query->where('cours_id', $coursId);
     }
 
     public function scopeNonExpire($query)
@@ -55,5 +74,18 @@ class Devoir extends Model
         
         $nbSoumissions = $this->soumissions()->count();
         return round(($nbSoumissions / $totalEtudiants) * 100, 2);
+    }
+
+    public function getStatutAttribute()
+    {
+        $now = now();
+        
+        if ($now < $this->date_publication) {
+            return 'non_publie';
+        } elseif ($now > $this->date_limite) {
+            return 'expire';
+        } else {
+            return 'ouvert';
+        }
     }
 }

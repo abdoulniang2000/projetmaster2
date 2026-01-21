@@ -5,7 +5,10 @@ import { cn } from "@/lib/utils"
 const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(({ className, ...props }, ref) => (
     <div
         ref={ref}
-        className={cn("rounded-lg border bg-card text-card-foreground shadow-sm", className)}
+        className={cn(
+            "rounded-xl border bg-white/95 backdrop-blur-lg text-gray-900 shadow-lg shadow-orange-500/10 border-gray-200/50 transition-all duration-300 hover:shadow-xl hover:shadow-orange-500/20",
+            className
+        )}
         {...props}
     />
 ))
@@ -14,7 +17,7 @@ Card.displayName = "Card"
 const CardHeader = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(({ className, ...props }, ref) => (
     <div
         ref={ref}
-        className={cn("flex flex-col space-y-1.5 p-6", className)}
+        className={cn("flex flex-col space-y-1.5 p-6 border-b border-gray-200/50", className)}
         {...props}
     />
 ))
@@ -23,7 +26,10 @@ CardHeader.displayName = "CardHeader"
 const CardTitle = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLHeadingElement>>(({ className, ...props }, ref) => (
     <h3
         ref={ref}
-        className={cn("text-2xl font-semibold leading-none tracking-tight", className)}
+        className={cn(
+            "text-2xl font-bold bg-gradient-to-r from-orange-600 via-blue-600 to-green-600 bg-clip-text text-transparent leading-none tracking-tight",
+            className
+        )}
         {...props}
     />
 ))
@@ -32,7 +38,7 @@ CardTitle.displayName = "CardTitle"
 const CardDescription = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLParagraphElement>>(({ className, ...props }, ref) => (
     <p
         ref={ref}
-        className={cn("text-sm text-muted-foreground", className)}
+        className={cn("text-sm text-gray-600", className)}
         {...props}
     />
 ))
@@ -46,7 +52,7 @@ CardContent.displayName = "CardContent"
 const CardFooter = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(({ className, ...props }, ref) => (
     <div
         ref={ref}
-        className={cn("flex items-center p-6 pt-0", className)}
+        className={cn("flex items-center p-6 pt-0 border-t border-gray-200/50", className)}
         {...props}
     />
 ))
