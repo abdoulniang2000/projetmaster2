@@ -7,16 +7,18 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { TrendingUp, Users, BookOpen, FileText, Target, Activity, Calendar, Award, Clock, BarChart3, Download, Filter, RefreshCw, Eye, Star, AlertCircle } from 'lucide-react';
 
 interface Analytics {
-    totalStudents: number;
-    activeStudents: number;
+    totalUsers: number;
+    activeUsers: number;
     totalCourses: number;
+    totalModules: number;
     totalAssignments: number;
+    totalSubmissions: number;
     submissionRate: number;
     averageGrade: number;
-    performanceBySubject: SubjectPerformance[];
+    performanceByCourse: CoursePerformance[];
     monthlyActivity: MonthlyActivity[];
     gradeEvolution: GradeEvolution[];
-    departmentStats: DepartmentStats[];
+    userStats: UserStats;
     kpis: KPIs;
 }
 
@@ -36,20 +38,26 @@ interface GradeEvolution {
     submissions: number;
 }
 
-interface DepartmentStats {
-    department: string;
-    students: number;
-    courses: number;
-    averageGrade: number;
-    engagement: number;
+interface UserStats {
+    totalUsers: number;
+    activeUsers: number;
+    studentsCount: number;
+    teachersCount: number;
+    adminsCount: number;
+    newUsersThisMonth: number;
+    userGrowthRate: number;
 }
 
-interface SubjectPerformance {
-    subject: string;
+interface CoursePerformance {
+    courseName: string;
+    courseId: number;
     totalStudents: number;
     averageGrade: number;
     completionRate: number;
     passRate: number;
+    modulesCount: number;
+    assignmentsCount: number;
+    submissionsCount: number;
 }
 
 interface MonthlyActivity {
@@ -61,16 +69,26 @@ interface MonthlyActivity {
 
 function AdvancedAnalyticsPage() {
     const [analytics, setAnalytics] = useState<Analytics>({
-        totalStudents: 0,
-        activeStudents: 0,
+        totalUsers: 0,
+        activeUsers: 0,
         totalCourses: 0,
+        totalModules: 0,
         totalAssignments: 0,
+        totalSubmissions: 0,
         submissionRate: 0,
         averageGrade: 0,
-        performanceBySubject: [],
+        performanceByCourse: [],
         monthlyActivity: [],
         gradeEvolution: [],
-        departmentStats: [],
+        userStats: {
+            totalUsers: 0,
+            activeUsers: 0,
+            studentsCount: 0,
+            teachersCount: 0,
+            adminsCount: 0,
+            newUsersThisMonth: 0,
+            userGrowthRate: 0
+        },
         kpis: {
             attendanceRate: 0,
             dropoutRate: 0,
@@ -90,16 +108,26 @@ function AdvancedAnalyticsPage() {
             try {
                 const response = await axios.get(`/v1/analytics?range=${timeRange}&department=${selectedDepartment}`);
                 setAnalytics(response.data || {
-                    totalStudents: 0,
-                    activeStudents: 0,
+                    totalUsers: 0,
+                    activeUsers: 0,
                     totalCourses: 0,
+                    totalModules: 0,
                     totalAssignments: 0,
+                    totalSubmissions: 0,
                     submissionRate: 0,
                     averageGrade: 0,
-                    performanceBySubject: [],
+                    performanceByCourse: [],
                     monthlyActivity: [],
                     gradeEvolution: [],
-                    departmentStats: [],
+                    userStats: {
+                        totalUsers: 0,
+                        activeUsers: 0,
+                        studentsCount: 0,
+                        teachersCount: 0,
+                        adminsCount: 0,
+                        newUsersThisMonth: 0,
+                        userGrowthRate: 0
+                    },
                     kpis: {
                         attendanceRate: 0,
                         dropoutRate: 0,
@@ -113,16 +141,26 @@ function AdvancedAnalyticsPage() {
             } catch (error) {
                 console.error('Erreur lors du chargement des analyses:', error);
                 setAnalytics({
-                    totalStudents: 0,
-                    activeStudents: 0,
+                    totalUsers: 0,
+                    activeUsers: 0,
                     totalCourses: 0,
+                    totalModules: 0,
                     totalAssignments: 0,
+                    totalSubmissions: 0,
                     submissionRate: 0,
                     averageGrade: 0,
-                    performanceBySubject: [],
+                    performanceByCourse: [],
                     monthlyActivity: [],
                     gradeEvolution: [],
-                    departmentStats: [],
+                    userStats: {
+                        totalUsers: 0,
+                        activeUsers: 0,
+                        studentsCount: 0,
+                        teachersCount: 0,
+                        adminsCount: 0,
+                        newUsersThisMonth: 0,
+                        userGrowthRate: 0
+                    },
                     kpis: {
                         attendanceRate: 0,
                         dropoutRate: 0,
@@ -254,21 +292,22 @@ function AdvancedAnalyticsPage() {
                             <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-xl flex items-center justify-center text-white">
                                 <Users className="w-6 h-6" />
                             </div>
-                            <div className={`flex items-center text-sm font-medium ${analytics.activeStudents > 0 ? 'text-green-600' : 'text-gray-600'
+                            <div className={`flex items-center text-sm font-medium ${analytics.activeUsers > 0 ? 'text-green-600' : 'text-gray-600'
                                 }`}>
                                 <TrendingUp className="w-4 h-4 mr-1" />
-                                {analytics.totalStudents > 0 ?
-                                    `+${Math.round((analytics.activeStudents / analytics.totalStudents) * 100)}%`
+                                {analytics.totalUsers > 0 ?
+                                    `+${Math.round((analytics.activeUsers / analytics.totalUsers) * 100)}%`
                                     : '0%'
                                 }
                             </div>
                         </div>
                         <div>
-                            <h3 className="text-2xl font-bold text-gray-900">{analytics.totalStudents}</h3>
-                            <p className="text-sm text-gray-600">Total étudiants</p>
+                            <h3 className="text-2xl font-bold text-gray-900">{analytics.totalUsers}</h3>
+                            <p className="text-sm text-gray-600">Total utilisateurs</p>
                         </div>
                         <div className="mt-2">
-                            <p className="text-xs text-gray-500">Actifs: {analytics.activeStudents}</p>
+                            <p className="text-xs text-gray-500">Actifs: {analytics.activeUsers}</p>
+                            <p className="text-xs text-gray-500">Étudiants: {analytics.userStats.studentsCount}</p>
                         </div>
                     </CardContent>
                 </Card>
@@ -290,6 +329,7 @@ function AdvancedAnalyticsPage() {
                             <p className="text-sm text-gray-600">Cours actifs</p>
                         </div>
                         <div className="mt-2">
+                            <p className="text-xs text-gray-500">Modules: {analytics.totalModules}</p>
                             <p className="text-xs text-gray-500">Taux de remise: {analytics.submissionRate}%</p>
                         </div>
                     </CardContent>
@@ -311,6 +351,7 @@ function AdvancedAnalyticsPage() {
                             <p className="text-sm text-gray-600">Devoirs créés</p>
                         </div>
                         <div className="mt-2">
+                            <p className="text-xs text-gray-500">Soumissions: {analytics.totalSubmissions}</p>
                             <p className="text-xs text-gray-500">Note moyenne: {analytics.averageGrade.toFixed(1)}/20</p>
                         </div>
                     </CardContent>
@@ -328,7 +369,7 @@ function AdvancedAnalyticsPage() {
                             </div>
                         </div>
                         <div>
-                            <h3 className="text-2xl font-bold text-gray-900">85%</h3>
+                            <h3 className="text-2xl font-bold text-gray-900">{analytics.kpis.successRate || 85}%</h3>
                             <p className="text-sm text-gray-600">Taux de réussite</p>
                         </div>
                         <div className="mt-2">
@@ -343,7 +384,7 @@ function AdvancedAnalyticsPage() {
                 <CardHeader>
                     <CardTitle className="flex items-center space-x-2">
                         <Activity className="w-5 h-5 text-blue-500" />
-                        <span>Performance par matière</span>
+                        <span>Performance par cours</span>
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -351,7 +392,7 @@ function AdvancedAnalyticsPage() {
                         <table className="w-full">
                             <thead>
                                 <tr className="border-b border-gray-200">
-                                    <th className="text-left py-3 px-4 font-medium text-gray-700">Matière</th>
+                                    <th className="text-left py-3 px-4 font-medium text-gray-700">Cours</th>
                                     <th className="text-left py-3 px-4 font-medium text-gray-700">Étudiants</th>
                                     <th className="text-left py-3 px-4 font-medium text-gray-700">Note moyenne</th>
                                     <th className="text-left py-3 px-4 font-medium text-gray-700">Taux de complétion</th>
@@ -359,33 +400,33 @@ function AdvancedAnalyticsPage() {
                                 </tr>
                             </thead>
                             <tbody>
-                                {analytics.performanceBySubject.map((subject, index) => (
+                                {analytics.performanceByCourse.map((course: CoursePerformance, index: number) => (
                                     <tr key={index} className="border-b border-gray-100 hover:bg-gray-50">
-                                        <td className="py-3 px-4 font-medium text-gray-900">{subject.subject}</td>
-                                        <td className="py-3 px-4 text-gray-700">{subject.totalStudents}</td>
-                                        <td className={`py-3 px-4 font-bold ${getGradeColor(subject.averageGrade)}`}>
-                                            {subject.averageGrade.toFixed(1)}/20
+                                        <td className="py-3 px-4 font-medium text-gray-900">{course.courseName}</td>
+                                        <td className="py-3 px-4 text-gray-700">{course.totalStudents}</td>
+                                        <td className={`py-3 px-4 font-bold ${getGradeColor(course.averageGrade)}`}>
+                                            {course.averageGrade.toFixed(1)}/20
                                         </td>
                                         <td className="py-3 px-4">
                                             <div className="flex items-center">
                                                 <div className="w-16 bg-gray-200 rounded-full h-2 mr-2">
                                                     <div
-                                                        className={`h-2 rounded-full ${getPerformanceColor(subject.completionRate)}`}
-                                                        style={{ width: `${subject.completionRate}%` }}
+                                                        className={`h-2 rounded-full ${getPerformanceColor(course.completionRate)}`}
+                                                        style={{ width: `${course.completionRate}%` }}
                                                     ></div>
                                                 </div>
-                                                <span className="text-sm font-medium">{subject.completionRate}%</span>
+                                                <span className="text-sm font-medium">{course.completionRate}%</span>
                                             </div>
                                         </td>
                                         <td className="py-3 px-4">
                                             <div className="flex items-center">
                                                 <div className="w-16 bg-gray-200 rounded-full h-2 mr-2">
                                                     <div
-                                                        className={`h-2 rounded-full ${getPerformanceColor(subject.passRate)}`}
-                                                        style={{ width: `${subject.passRate}%` }}
+                                                        className={`h-2 rounded-full ${getPerformanceColor(course.passRate)}`}
+                                                        style={{ width: `${course.passRate}%` }}
                                                     ></div>
                                                 </div>
-                                                <span className="text-sm font-medium">{subject.passRate}%</span>
+                                                <span className="text-sm font-medium">{course.passRate}%</span>
                                             </div>
                                         </td>
                                     </tr>
@@ -407,12 +448,12 @@ function AdvancedAnalyticsPage() {
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-4">
-                            {analytics.monthlyActivity.map((month, index) => (
+                            {analytics.monthlyActivity.map((month: MonthlyActivity, index: number) => (
                                 <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                                     <div>
                                         <p className="font-medium text-gray-900">{month.month}</p>
                                         <p className="text-sm text-gray-600">
-                                            {month.activeStudents} étudiants actifs
+                                            {month.activeStudents} utilisateurs actifs
                                         </p>
                                     </div>
                                     <div className="text-right">

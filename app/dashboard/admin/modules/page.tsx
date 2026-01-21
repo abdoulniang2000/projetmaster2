@@ -8,26 +8,18 @@ import { BookOpen, Plus, Edit, Trash2, Search, Filter, Clock, Users, Calendar, P
 
 interface Module {
     id: number;
-    nom: string;
-    code: string;
-    description: string;
-    semestre: string;
-    matiere: string;
-    enseignant: {
-        id: number;
-        first_name: string;
-        last_name: string;
-        email: string;
-    };
-    nombre_etudiants: number;
-    is_active: boolean;
+    cours_id: number;
+    titre: string;
+    contenu: string;
+    ordre: number;
     created_at: string;
-    credits?: number;
-    volume_horaire?: number;
-    objectifs?: string[];
-    prerequis?: string[];
-    evaluation_method?: string;
-    coefficient?: number;
+    updated_at: string;
+    cours?: {
+        id: number;
+        nom: string;
+        description: string;
+        enseignant_id: number;
+    };
 }
 
 interface Matiere {
@@ -90,11 +82,9 @@ interface NewSemestre {
 
 interface ModuleStats {
     total_modules: number;
-    active_modules: number;
-    total_etudiants: number;
-    average_credits: number;
-    total_volume_horaire: number;
-    completion_rate: number;
+    total_cours: number;
+    total_modules_by_cours: { [key: number]: number };
+    average_order: number;
 }
 
 function ModulesManagementPage() {
@@ -111,11 +101,9 @@ function ModulesManagementPage() {
     const [selectedItem, setSelectedItem] = useState<any>(null);
     const [stats, setStats] = useState<ModuleStats>({
         total_modules: 0,
-        active_modules: 0,
-        total_etudiants: 0,
-        average_credits: 0,
-        total_volume_horaire: 0,
-        completion_rate: 0
+        total_cours: 0,
+        total_modules_by_cours: {},
+        average_order: 0
     });
     const [newModule, setNewModule] = useState<NewModule>({
         nom: '',
@@ -161,17 +149,18 @@ function ModulesManagementPage() {
 
                 // Calculer les statistiques
                 const modulesData = modulesRes.data || [];
-                const totalEtudiants = modulesData.reduce((acc: number, m: Module) => acc + m.nombre_etudiants, 0);
-                const totalCredits = modulesData.reduce((acc: number, m: Module) => acc + (m.credits || 0), 0);
-                const totalVolume = modulesData.reduce((acc: number, m: Module) => acc + (m.volume_horaire || 0), 0);
+                const uniqueCours = new Set(modulesData.map((m: Module) => m.cours_id)).size;
+                const totalOrder = modulesData.reduce((acc: number, m: Module) => acc + m.ordre, 0);
+                const modulesByCours = modulesData.reduce((acc: any, m: Module) => {
+                    acc[m.cours_id] = (acc[m.cours_id] || 0) + 1;
+                    return acc;
+                }, {});
 
                 setStats({
                     total_modules: modulesData.length,
-                    active_modules: modulesData.filter((m: Module) => m.is_active).length,
-                    total_etudiants: totalEtudiants,
-                    average_credits: modulesData.length > 0 ? Math.round(totalCredits / modulesData.length) : 0,
-                    total_volume_horaire: totalVolume,
-                    completion_rate: Math.round(Math.random() * 30) + 70 // Simulation
+                    total_cours: uniqueCours,
+                    total_modules_by_cours: modulesByCours,
+                    average_order: modulesData.length > 0 ? Math.round(totalOrder / modulesData.length) : 0
                 });
             } catch (error) {
                 console.error('Erreur lors du chargement des données:', error);
@@ -188,9 +177,8 @@ function ModulesManagementPage() {
     }, []);
 
     const filteredModules = modules.filter(module =>
-        module.nom.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        module.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        module.matiere.toLowerCase().includes(searchTerm.toLowerCase())
+        module.titre.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        module.contenu.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     const filteredMatieres = matieres.filter(matiere =>
@@ -203,13 +191,13 @@ function ModulesManagementPage() {
         semestre.annee_academique.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    const handleToggleModule = async (moduleId: number, isActive: boolean) => {
+    const handleToggleModule = async (moduleId: number) => {
         try {
-            await axios.put(`/v1/modules/${moduleId}/status`, { is_active: isActive });
+            await axios.delete(`/v1/modules/${moduleId}`);
             const modulesRes = await axios.get('/v1/modules');
             setModules(modulesRes.data || []);
         } catch (error) {
-            console.error('Erreur lors de la modification du statut:', error);
+            console.error('Erreur lors de la suppression:', error);
         }
     };
 
@@ -227,7 +215,12 @@ function ModulesManagementPage() {
 
     const handleAddModule = async () => {
         try {
-            await axios.post('/v1/modules', newModule);
+            await axios.post('/v1/modules', {
+                cours_id: newModule.enseignant_id,
+                titre: newModule.nom,
+                contenu: newModule.description,
+                ordre: newModule.credits || 1
+            });
             setShowAddModal(false);
             setNewModule({
                 nom: '',
@@ -370,11 +363,11 @@ function ModulesManagementPage() {
                     <CardContent className="p-6">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-sm font-medium text-gray-600">Modules actifs</p>
-                                <p className="text-2xl font-bold text-green-600">{stats.active_modules}</p>
+                                <p className="text-sm font-medium text-gray-600">Total cours</p>
+                                <p className="text-2xl font-bold text-green-600">{stats.total_cours}</p>
                             </div>
                             <div className="w-12 h-12 bg-gradient-to-br from-green-400 to-green-600 rounded-xl flex items-center justify-center text-white">
-                                <Play className="w-6 h-6" />
+                                <BookOpen className="w-6 h-6" />
                             </div>
                         </div>
                     </CardContent>
@@ -409,8 +402,8 @@ function ModulesManagementPage() {
                     <CardContent className="p-6">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-sm font-medium text-gray-600">Total étudiants</p>
-                                <p className="text-2xl font-bold text-blue-600">{stats.total_etudiants}</p>
+                                <p className="text-sm font-medium text-gray-600">Ordre moyen</p>
+                                <p className="text-2xl font-bold text-blue-600">{stats.average_order}</p>
                             </div>
                             <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-xl flex items-center justify-center text-white">
                                 <Users className="w-6 h-6" />
@@ -422,8 +415,8 @@ function ModulesManagementPage() {
                     <CardContent className="p-6">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-sm font-medium text-gray-600">Taux complétion</p>
-                                <p className="text-2xl font-bold text-indigo-600">{stats.completion_rate}%</p>
+                                <p className="text-sm font-medium text-gray-600">Modules/Cours</p>
+                                <p className="text-2xl font-bold text-indigo-600">{stats.total_modules > 0 && stats.total_cours > 0 ? Math.round(stats.total_modules / stats.total_cours) : 0}</p>
                             </div>
                             <div className="w-12 h-12 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-xl flex items-center justify-center text-white">
                                 <Target className="w-6 h-6" />
@@ -492,11 +485,8 @@ function ModulesManagementPage() {
                                 <thead>
                                     <tr className="border-b border-gray-200">
                                         <th className="text-left py-3 px-4 font-medium text-gray-700">Module</th>
-                                        <th className="text-left py-3 px-4 font-medium text-gray-700">Code</th>
-                                        <th className="text-left py-3 px-4 font-medium text-gray-700">Matière</th>
-                                        <th className="text-left py-3 px-4 font-medium text-gray-700">Semestre</th>
-                                        <th className="text-left py-3 px-4 font-medium text-gray-700">Étudiants</th>
-                                        <th className="text-left py-3 px-4 font-medium text-gray-700">Statut</th>
+                                        <th className="text-left py-3 px-4 font-medium text-gray-700">Cours ID</th>
+                                        <th className="text-left py-3 px-4 font-medium text-gray-700">Ordre</th>
                                         <th className="text-left py-3 px-4 font-medium text-gray-700">Actions</th>
                                     </tr>
                                 </thead>
@@ -505,41 +495,18 @@ function ModulesManagementPage() {
                                         <tr key={module.id} className="border-b border-gray-100 hover:bg-gray-50">
                                             <td className="py-3 px-4">
                                                 <div>
-                                                    <p className="font-medium text-gray-900">{module.nom}</p>
-                                                    <p className="text-sm text-gray-600">{module.description.substring(0, 50)}...</p>
+                                                    <p className="font-medium text-gray-900">{module.titre}</p>
+                                                    <p className="text-sm text-gray-600">{module.contenu.substring(0, 50)}...</p>
                                                 </div>
                                             </td>
-                                            <td className="py-3 px-4 text-gray-700">{module.code}</td>
-                                            <td className="py-3 px-4 text-gray-700">{module.matiere}</td>
-                                            <td className="py-3 px-4 text-gray-700">{module.semestre}</td>
-                                            <td className="py-3 px-4">
-                                                <div className="flex items-center">
-                                                    <Users className="w-4 h-4 mr-2 text-gray-500" />
-                                                    {module.nombre_etudiants}
-                                                </div>
-                                            </td>
-                                            <td className="py-3 px-4">
-                                                <label className="relative inline-flex items-center cursor-pointer">
-                                                    <input
-                                                        type="checkbox"
-                                                        className="sr-only peer"
-                                                        checked={module.is_active}
-                                                        onChange={(e) => handleToggleModule(module.id, e.target.checked)}
-                                                    />
-                                                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
-                                                </label>
-                                                <span className="ml-2 text-sm font-medium">
-                                                    {module.is_active ? 'Actif' : 'Inactif'}
-                                                </span>
-                                            </td>
+                                            <td className="py-3 px-4 text-gray-700">{module.cours_id}</td>
+                                            <td className="py-3 px-4 text-gray-700">{module.ordre}</td>
                                             <td className="py-3 px-4">
                                                 <div className="flex items-center space-x-2">
-                                                    <button className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
-                                                        <Edit className="w-4 h-4" />
-                                                    </button>
                                                     <button
-                                                        onClick={() => handleDeleteModule(module.id)}
+                                                        onClick={() => handleToggleModule(module.id)}
                                                         className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                        title="Supprimer"
                                                     >
                                                         <Trash2 className="w-4 h-4" />
                                                     </button>

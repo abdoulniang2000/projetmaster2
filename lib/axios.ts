@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const axiosInstance = axios.create({
-    baseURL: 'http://127.0.0.1:8001/api', // Corrigé : enlever /v1 pour éviter le double /v1/v1
+    baseURL: 'http://127.0.0.1:8001/api', // Port 8001 où le serveur fonctionne
     headers: {
         'Accept': 'application/json',
         'Content-Type': 'application/json',
@@ -24,19 +24,14 @@ axiosInstance.interceptors.response.use(
     (response) => response,
     (error) => {
         console.error('=== AXIOS ERROR INTERCEPTOR ===');
-        console.error('Error details:', {
-            message: error.message,
-            code: error.code,
-            status: error.response?.status,
-            statusText: error.response?.statusText,
-            data: error.response?.data,
-            config: {
-                url: error.config?.url,
-                method: error.config?.method,
-                baseURL: error.config?.baseURL,
-                headers: error.config?.headers
-            }
-        });
+        console.error('URL:', error.config?.url || 'Unknown');
+        console.error('Method:', error.config?.method || 'Unknown');
+        console.error('Status:', error.response?.status || 'No response');
+        console.error('Status Text:', error.response?.statusText || 'No response');
+        console.error('Response Data:', error.response?.data || 'No response data');
+        console.error('Error Message:', error.message);
+        console.error('Full Error:', error);
+        console.error('=== END AXIOS ERROR ===');
 
         if (error.response?.status === 401) {
             localStorage.removeItem('auth_token');

@@ -34,6 +34,7 @@ class User extends Authenticatable
         'about',
         'avatar',
         'status',
+        'role',
         'last_login_at',
         'last_login_ip',
     ];
@@ -138,5 +139,81 @@ class User extends Authenticatable
     public function messagesRecus()
     {
         return $this->hasMany(Message::class, 'destinataire_id');
+    }
+
+    public function notifications()
+    {
+        return $this->morphMany(Notification::class, 'notifiable');
+    }
+
+    public function fichiers()
+    {
+        return $this->hasMany(Fichier::class, 'uploaded_by');
+    }
+
+    public function forums()
+    {
+        return $this->hasMany(Forum::class, 'created_by');
+    }
+
+    public function discussions()
+    {
+        return $this->hasMany(Discussion::class);
+    }
+
+    public function reponses()
+    {
+        return $this->hasMany(Reponse::class);
+    }
+
+    public function annonces()
+    {
+        return $this->hasMany(Annonce::class, 'created_by');
+    }
+
+    public function statistiques()
+    {
+        return $this->hasMany(Statistique::class);
+    }
+
+    public function activites()
+    {
+        return $this->hasMany(Activite::class);
+    }
+
+    public function departement()
+    {
+        return $this->belongsTo(Departement::class, 'department');
+    }
+
+    public function coursInscrits()
+    {
+        return $this->belongsToMany(Cours::class, 'cours_etudiants')
+                    ->withTimestamps();
+    }
+
+    public function messagesNonLus()
+    {
+        return $this->messagesRecus()->nonLu();
+    }
+
+    public function notificationsNonLues()
+    {
+        return $this->notifications()->nonLu();
+    }
+
+    public function estEtudiant()
+    {
+        return $this->hasRole('etudiant');
+    }
+
+    public function estEnseignant()
+    {
+        return $this->hasRole('enseignant');
+    }
+
+    public function estAdmin()
+    {
+        return $this->hasRole('admin');
     }
 }

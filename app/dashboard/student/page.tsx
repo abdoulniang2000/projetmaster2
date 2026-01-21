@@ -96,23 +96,63 @@ function StudentDashboard() {
     const [grades, setGrades] = useState<Grade[]>([]);
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState<'courses' | 'assignments' | 'grades' | 'notifications'>('courses');
+    const [activeTab, setActiveTab] = useState<'courses' | 'assignments' | 'grades' | 'notifications' | 'forums' | 'messages'>('courses');
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
 
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const [coursesRes, assignmentsRes, gradesRes, notificationsRes] = await Promise.all([
-                    axios.get('/v1/student/courses'),
-                    axios.get('/v1/student/assignments'),
-                    axios.get('/v1/student/grades'),
-                    axios.get('/v1/student/notifications')
+                const [coursesRes, assignmentsRes, gradesRes, notificationsRes, analyticsRes] = await Promise.all([
+                    axios.get('/v1/cours'),
+                    axios.get('/v1/devoirs'),
+                    axios.get('/v1/notes'),
+                    axios.get('/v1/notifications'),
+                    axios.get('/v1/analytics/dashboard')
                 ]);
-                setCourses(coursesRes.data || []);
-                setAssignments(assignmentsRes.data || []);
-                setGrades(gradesRes.data || []);
-                setNotifications(notificationsRes.data || []);
+
+                // Transformer les données pour correspondre aux interfaces
+                const coursesData = coursesRes.data.map((course: any) => ({
+                    ...course,
+                    title: course.nom,
+                    instructor: course.enseignant,
+                    module: course.module?.nom || 'Non spécifié',
+                    semester: course.semestre?.nom || 'Non spécifié',
+                    materials: course.fichiers || [],
+                    assignments: course.devoirs || [],
+                    progress: Math.floor(Math.random() * 100) // TODO: Calculer réel progression
+                }));
+
+                const assignmentsData = assignmentsRes.data.map((assignment: any) => ({
+                    ...assignment,
+                    title: assignment.titre,
+                    description: assignment.description,
+                    course: assignment.cours,
+                    due_date: assignment.date_limite,
+                    status: assignment.is_published ? 'published' : 'draft'
+                }));
+
+                const gradesData = gradesRes.data.map((grade: any) => ({
+                    ...grade,
+                    assignment: grade.soumission?.devoir,
+                    course: grade.soumission?.devoir?.cours,
+                    grade: grade.valeur,
+                    max_grade: grade.soumission?.devoir?.note_maximale || 20,
+                    feedback: grade.commentaire
+                }));
+
+                const notificationsData = notificationsRes.data.map((notification: any) => ({
+                    ...notification,
+                    title: notification.titre,
+                    message: notification.contenu,
+                    read: !!notification.read_at,
+                    type: notification.type
+                }));
+
+                setCourses(coursesData || []);
+                setAssignments(assignmentsData || []);
+                setGrades(gradesData || []);
+                setNotifications(notificationsData || []);
             } catch (error) {
                 console.error('Erreur lors du chargement des données:', error);
             } finally {
@@ -287,8 +327,8 @@ function StudentDashboard() {
                 <button
                     onClick={() => setActiveTab('courses')}
                     className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${activeTab === 'courses'
-                            ? 'bg-white text-blue-600 shadow-sm'
-                            : 'text-gray-600 hover:text-gray-900'
+                        ? 'bg-white text-blue-600 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
                         }`}
                 >
                     <BookOpen className="w-4 h-4" />
@@ -297,8 +337,8 @@ function StudentDashboard() {
                 <button
                     onClick={() => setActiveTab('assignments')}
                     className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${activeTab === 'assignments'
-                            ? 'bg-white text-blue-600 shadow-sm'
-                            : 'text-gray-600 hover:text-gray-900'
+                        ? 'bg-white text-blue-600 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
                         }`}
                 >
                     <FileText className="w-4 h-4" />
@@ -307,18 +347,38 @@ function StudentDashboard() {
                 <button
                     onClick={() => setActiveTab('grades')}
                     className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${activeTab === 'grades'
-                            ? 'bg-white text-blue-600 shadow-sm'
-                            : 'text-gray-600 hover:text-gray-900'
+                        ? 'bg-white text-blue-600 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
                         }`}
                 >
                     <Star className="w-4 h-4" />
                     <span>Notes</span>
                 </button>
                 <button
+                    onClick={() => setActiveTab('forums')}
+                    className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${activeTab === 'forums'
+                        ? 'bg-white text-blue-600 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
+                        }`}
+                >
+                    <MessageSquare className="w-4 h-4" />
+                    <span>Forums</span>
+                </button>
+                <button
+                    onClick={() => setActiveTab('messages')}
+                    className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${activeTab === 'messages'
+                        ? 'bg-white text-blue-600 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
+                        }`}
+                >
+                    <MessageSquare className="w-4 h-4" />
+                    <span>Messages</span>
+                </button>
+                <button
                     onClick={() => setActiveTab('notifications')}
                     className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${activeTab === 'notifications'
-                            ? 'bg-white text-blue-600 shadow-sm'
-                            : 'text-gray-600 hover:text-gray-900'
+                        ? 'bg-white text-blue-600 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
                         }`}
                 >
                     <Bell className="w-4 h-4" />
@@ -423,9 +483,9 @@ function StudentDashboard() {
                                                 <div key={material.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
                                                     <div className="flex items-center space-x-3">
                                                         <div className={`w-8 h-8 rounded flex items-center justify-center ${material.type === 'pdf' ? 'bg-red-100' :
-                                                                material.type === 'video' ? 'bg-blue-100' :
-                                                                    material.type === 'ppt' ? 'bg-orange-100' :
-                                                                        'bg-gray-100'
+                                                            material.type === 'video' ? 'bg-blue-100' :
+                                                                material.type === 'ppt' ? 'bg-orange-100' :
+                                                                    'bg-gray-100'
                                                             }`}>
                                                             {material.type === 'pdf' ? '📄' :
                                                                 material.type === 'video' ? '🎥' :

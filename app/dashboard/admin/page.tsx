@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import withAuth from '@/app/components/withAuth';
 import axios from '@/lib/axios';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, BookOpen, FileText, CheckCircle, TrendingUp, Activity, AlertCircle, Settings, Download, MessageSquare, Bell, BarChart3, Calendar, Clock, Target, Award, UserCheck, BookMarked, Trash2, Edit, Eye, Ban } from 'lucide-react';
+import { Users, BookOpen, FileText, CheckCircle, TrendingUp, Activity, AlertCircle, Settings, Download, MessageSquare, Bell, BarChart3, Calendar, Clock, Target, Award, UserCheck, BookMarked, Trash2, Edit, Eye, Ban, User, Mail, Inbox } from 'lucide-react';
 import Link from 'next/link';
 
 interface Stats {
@@ -55,29 +55,26 @@ function AdminDashboardPage() {
         storageUsed: 0
     });
     const [loading, setLoading] = useState(true);
-    const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
+    const [users, setUsers] = useState([]);
+    const [cours, setCours] = useState([]);
+    const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([]);
     const [systemAlerts, setSystemAlerts] = useState<SystemAlert[]>([]);
     const [timeRange, setTimeRange] = useState<'week' | 'month' | 'year'>('week');
 
     useEffect(() => {
-        const fetchStats = async () => {
+        const fetchDashboardData = async () => {
             try {
-                const [usersRes, coursRes, devoirsRes, soumissionsRes] = await Promise.all([
+                const [analyticsRes, usersRes, coursesRes] = await Promise.all([
+                    axios.get('/v1/analytics/dashboard'),
                     axios.get('/v1/users'),
-                    axios.get('/v1/cours'),
-                    axios.get('/v1/devoirs'),
-                    axios.get('/v1/soumissions')
+                    axios.get('/v1/cours')
                 ]);
 
-                const users = usersRes.data || [];
-                const cours = coursRes.data || [];
-                const devoirs = devoirsRes.data || [];
-                const soumissions = soumissionsRes.data || [];
+                const analyticsData = analyticsRes.data;
 
-                const activeStudents = users.filter((user: any) =>
-                    user.role === 'student' && user.last_login &&
-                    new Date(user.last_login) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
-                ).length;
+                const devoirs: any[] = [];
+                const soumissions: any[] = [];
+                const activeStudents = analyticsData.stats?.utilisateurs?.actifs || 0;
 
                 const submissionRate = devoirs.length > 0 ?
                     Math.round((soumissions.length / devoirs.length) * 100) : 0;
@@ -101,7 +98,7 @@ function AdminDashboardPage() {
                 });
 
                 // Simuler l'activité récente
-                setRecentActivity([
+                setRecentActivities([
                     {
                         id: '1',
                         type: 'user',
@@ -167,7 +164,7 @@ function AdminDashboardPage() {
             }
         };
 
-        fetchStats();
+        fetchDashboardData();
     }, []);
 
     if (loading) {
@@ -246,72 +243,58 @@ function AdminDashboardPage() {
 
     const quickActions = [
         {
-            title: 'Gérer les utilisateurs',
-            description: 'Administrer les comptes utilisateurs et les rôles',
+            title: 'Dashboard',
+            description: 'Vue d\'ensemble des statistiques et activités',
+            icon: BarChart3,
+            color: 'blue',
+            href: '/dashboard/admin'
+        },
+        {
+            title: 'Utilisateurs',
+            description: 'Gérer les comptes utilisateurs et les rôles',
             icon: Users,
             color: 'orange',
             href: '/dashboard/admin/users'
         },
         {
-            title: 'Gérer les modules',
+            title: 'Modules',
             description: 'Gérer les modules, matières et semestres',
             icon: BookOpen,
-            color: 'blue',
+            color: 'green',
             href: '/dashboard/admin/modules'
         },
         {
-            title: 'Modérer les contenus',
-            description: 'Valider les contenus signalés',
-            icon: FileText,
-            color: 'green',
-            href: '/dashboard/admin/content'
+            title: 'Messagerie',
+            description: 'Consulter et envoyer des messages',
+            icon: Mail,
+            color: 'purple',
+            href: '/dashboard/admin/messages'
         },
         {
-            title: 'Voir les statistiques',
-            description: 'Analyser les performances avancées',
-            icon: TrendingUp,
-            color: 'purple',
-            href: '/dashboard/admin/analytics'
+            title: 'Notifications',
+            description: 'Gérer les notifications système',
+            icon: Bell,
+            color: 'indigo',
+            href: '/dashboard/admin/notifications'
+        },
+        {
+            title: 'Profil',
+            description: 'Gérer votre profil administrateur',
+            icon: User,
+            color: 'yellow',
+            href: '/dashboard/admin/profile'
         }
     ];
 
-    const systemActions = [
-        {
-            title: 'Sauvegarder la base de données',
-            description: 'Exporter toutes les données',
-            icon: Settings,
-            color: 'blue',
-            action: 'backup'
-        },
-        {
-            title: 'Nettoyer les contenus obsolètes',
-            description: 'Supprimer les anciens contenus',
-            icon: Activity,
-            color: 'orange',
-            action: 'cleanup'
-        },
-        {
-            title: 'Générer les rapports',
-            description: 'Créer des rapports détaillés',
-            icon: FileText,
-            color: 'green',
-            action: 'reports'
-        },
-        {
-            title: 'Voir les logs système',
-            description: 'Journaux et activités',
-            icon: AlertCircle,
-            color: 'red',
-            action: 'logs'
-        }
-    ];
 
     const getStatCardClasses = (color: string) => {
         const colorClasses = {
             orange: 'from-orange-400 to-orange-600 shadow-orange',
             blue: 'from-blue-400 to-blue-600 shadow-blue',
             green: 'from-green-400 to-green-600 shadow-green',
-            purple: 'from-purple-400 to-purple-600 shadow-purple'
+            purple: 'from-purple-400 to-purple-600 shadow-purple',
+            indigo: 'from-indigo-400 to-indigo-600 shadow-indigo',
+            yellow: 'from-yellow-400 to-yellow-600 shadow-yellow'
         };
         return colorClasses[color as keyof typeof colorClasses] || colorClasses.blue;
     };
@@ -321,7 +304,9 @@ function AdminDashboardPage() {
             orange: 'card-orange hover:shadow-orange',
             blue: 'card-blue hover:shadow-blue',
             green: 'card-green hover:shadow-green',
-            purple: 'bg-purple-50 hover:shadow-purple'
+            purple: 'bg-purple-50 hover:shadow-purple',
+            indigo: 'bg-indigo-50 hover:shadow-indigo',
+            yellow: 'bg-yellow-50 hover:shadow-yellow'
         };
         return colorClasses[color as keyof typeof colorClasses] || colorClasses.blue;
     };
@@ -390,148 +375,76 @@ function AdminDashboardPage() {
             </div>
 
             {/* Actions rapides */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <div className="space-y-6">
-                    <h2 className="text-2xl font-bold text-gray-900">Actions rapides</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {quickActions.map((action, index) => (
-                            <Link
-                                key={action.title}
-                                href={action.href}
-                                className={`card-gradient p-6 rounded-xl ${getActionCardClasses(action.color)} animate-fadeInUp hover:transform hover:scale-105 transition-all duration-300 cursor-pointer`}
-                                style={{ animationDelay: `${(index + 4) * 0.1}s` }}
-                            >
-                                <div className="flex items-start space-x-4">
-                                    <div className={`w-10 h-10 bg-gradient-to-br ${getStatCardClasses(action.color)} rounded-lg flex items-center justify-center text-white flex-shrink-0`}>
-                                        <action.icon className="w-5 h-5" />
-                                    </div>
-                                    <div>
-                                        <h3 className="font-semibold text-gray-900 mb-1">{action.title}</h3>
-                                        <p className="text-sm text-gray-600">{action.description}</p>
-                                    </div>
+            <div className="space-y-6">
+                <h2 className="text-2xl font-bold text-gray-900">Actions rapides</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {quickActions.map((action, index) => (
+                        <Link
+                            key={action.title}
+                            href={action.href}
+                            className={`card-gradient p-6 rounded-xl ${getActionCardClasses(action.color)} animate-fadeInUp hover:transform hover:scale-105 transition-all duration-300 cursor-pointer`}
+                            style={{ animationDelay: `${(index + 4) * 0.1}s` }}
+                        >
+                            <div className="flex items-start space-x-4">
+                                <div className={`w-10 h-10 bg-gradient-to-br ${getStatCardClasses(action.color)} rounded-lg flex items-center justify-center text-white flex-shrink-0`}>
+                                    <action.icon className="w-5 h-5" />
                                 </div>
-                            </Link>
-                        ))}
-                    </div>
-                </div>
-
-                <div className="space-y-6">
-                    <h2 className="text-2xl font-bold text-gray-900">Actions système</h2>
-                    <div className="space-y-4">
-                        {systemActions.map((action, index) => (
-                            <button
-                                key={action.title}
-                                className={`w-full card-gradient p-6 rounded-xl ${getActionCardClasses(action.color)} text-left animate-fadeInRight hover:transform hover:scale-105 transition-all duration-300`}
-                                style={{ animationDelay: `${(index + 8) * 0.1}s` }}
-                            >
-                                <div className="flex items-start space-x-4">
-                                    <div className={`w-10 h-10 bg-gradient-to-br ${getStatCardClasses(action.color)} rounded-lg flex items-center justify-center text-white flex-shrink-0`}>
-                                        <action.icon className="w-5 h-5" />
-                                    </div>
-                                    <div>
-                                        <h3 className="font-semibold text-gray-900 mb-1">{action.title}</h3>
-                                        <p className="text-sm text-gray-600">{action.description}</p>
-                                    </div>
+                                <div>
+                                    <h3 className="font-semibold text-gray-900 mb-1">{action.title}</h3>
+                                    <p className="text-sm text-gray-600">{action.description}</p>
                                 </div>
-                            </button>
-                        ))}
-                    </div>
+                            </div>
+                        </Link>
+                    ))}
                 </div>
             </div>
 
-            {/* Alertes système et activité récente */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <div className="space-y-6">
-                    <div className="flex items-center justify-between">
-                        <h2 className="text-2xl font-bold text-gray-900">Alertes système</h2>
-                        <Bell className="w-5 h-5 text-gray-400" />
-                    </div>
-                    <div className="space-y-3">
-                        {systemAlerts.length > 0 ? (
-                            systemAlerts.map((alert) => (
-                                <div
-                                    key={alert.id}
-                                    className={`p-4 rounded-lg border-l-4 ${alert.type === 'error' ? 'bg-red-50 border-red-500' :
-                                        alert.type === 'warning' ? 'bg-yellow-50 border-yellow-500' :
-                                            'bg-blue-50 border-blue-500'
-                                        } animate-fadeInUp`}
-                                >
-                                    <div className="flex items-start justify-between">
-                                        <div className="flex items-start space-x-3">
-                                            <AlertCircle className={`w-5 h-5 mt-0.5 ${alert.type === 'error' ? 'text-red-600' :
-                                                alert.type === 'warning' ? 'text-yellow-600' :
-                                                    'text-blue-600'
-                                                }`} />
-                                            <div>
-                                                <p className="text-sm font-medium text-gray-900">{alert.message}</p>
-                                                <p className="text-xs text-gray-500 mt-1">
-                                                    {new Date(alert.timestamp).toLocaleString('fr-FR')}
-                                                </p>
-                                            </div>
-                                        </div>
-                                        {alert.action && (
-                                            <button className="text-xs bg-white px-3 py-1 rounded-full border border-gray-200 hover:bg-gray-50">
-                                                {alert.action}
-                                            </button>
-                                        )}
-                                    </div>
-                                </div>
-                            ))
-                        ) : (
-                            <div className="text-center py-8 text-gray-500">
-                                <CheckCircle className="w-12 h-12 mx-auto mb-3 text-green-500" />
-                                <p>Aucune alerte système</p>
-                            </div>
-                        )}
-                    </div>
+            {/* Activité récente */}
+            <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                    <h2 className="text-2xl font-bold text-gray-900">Activité récente</h2>
+                    <Activity className="w-5 h-5 text-gray-400" />
                 </div>
-
-                <div className="space-y-6">
-                    <div className="flex items-center justify-between">
-                        <h2 className="text-2xl font-bold text-gray-900">Activité récente</h2>
-                        <Activity className="w-5 h-5 text-gray-400" />
-                    </div>
-                    <div className="space-y-3">
-                        {recentActivity.map((activity) => (
-                            <div key={activity.id} className="p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors animate-fadeInUp">
-                                <div className="flex items-start space-x-3">
-                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${activity.type === 'user' ? 'bg-orange-100' :
-                                        activity.type === 'course' ? 'bg-blue-100' :
-                                            activity.type === 'assignment' ? 'bg-green-100' :
-                                                'bg-purple-100'
-                                        }`}>
-                                        {
-                                            activity.type === 'user' ? <Users className="w-4 h-4 text-orange-600" /> :
-                                                activity.type === 'course' ? <BookOpen className="w-4 h-4 text-blue-600" /> :
-                                                    activity.type === 'assignment' ? <FileText className="w-4 h-4 text-green-600" /> :
-                                                        <CheckCircle className="w-4 h-4 text-purple-600" />
-                                        }
+                <div className="space-y-3">
+                    {recentActivities.map((activity) => (
+                        <div key={activity.id} className="p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors animate-fadeInUp">
+                            <div className="flex items-start space-x-3">
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${activity.type === 'user' ? 'bg-orange-100' :
+                                    activity.type === 'course' ? 'bg-blue-100' :
+                                        activity.type === 'assignment' ? 'bg-green-100' :
+                                            'bg-purple-100'
+                                    }`}>
+                                    {
+                                        activity.type === 'user' ? <Users className="w-4 h-4 text-orange-600" /> :
+                                            activity.type === 'course' ? <BookOpen className="w-4 h-4 text-blue-600" /> :
+                                                activity.type === 'assignment' ? <FileText className="w-4 h-4 text-green-600" /> :
+                                                    <CheckCircle className="w-4 h-4 text-purple-600" />
+                                    }
+                                </div>
+                                <div className="flex-1">
+                                    <div className="flex items-center justify-between">
+                                        <p className="text-sm font-medium text-gray-900">{activity.description}</p>
+                                        <span className={`text-xs px-2 py-1 rounded-full ${activity.priority === 'high' ? 'bg-red-100 text-red-700' :
+                                            activity.priority === 'medium' ? 'bg-yellow-100 text-yellow-700' :
+                                                'bg-gray-100 text-gray-700'
+                                            }`}>
+                                            {activity.priority === 'high' ? 'Urgent' : activity.priority === 'medium' ? 'Moyen' : 'Bas'}
+                                        </span>
                                     </div>
-                                    <div className="flex-1">
-                                        <div className="flex items-center justify-between">
-                                            <p className="text-sm font-medium text-gray-900">{activity.description}</p>
-                                            <span className={`text-xs px-2 py-1 rounded-full ${activity.priority === 'high' ? 'bg-red-100 text-red-700' :
-                                                activity.priority === 'medium' ? 'bg-yellow-100 text-yellow-700' :
-                                                    'bg-gray-100 text-gray-700'
-                                                }`}>
-                                                {activity.priority === 'high' ? 'Urgent' : activity.priority === 'medium' ? 'Moyen' : 'Bas'}
-                                            </span>
-                                        </div>
-                                        <div className="flex items-center space-x-2 mt-1">
-                                            <p className="text-xs text-gray-500">{activity.user}</p>
-                                            <span className="text-gray-300">•</span>
-                                            <p className="text-xs text-gray-500">
-                                                {new Date(activity.timestamp).toLocaleString('fr-FR', {
-                                                    hour: '2-digit',
-                                                    minute: '2-digit'
-                                                })}
-                                            </p>
-                                        </div>
+                                    <div className="flex items-center space-x-2 mt-1">
+                                        <p className="text-xs text-gray-500">{activity.user}</p>
+                                        <span className="text-gray-300">•</span>
+                                        <p className="text-xs text-gray-500">
+                                            {new Date(activity.timestamp).toLocaleString('fr-FR', {
+                                                hour: '2-digit',
+                                                minute: '2-digit'
+                                            })}
+                                        </p>
                                     </div>
                                 </div>
                             </div>
-                        ))}
-                    </div>
+                        </div>
+                    ))}
                 </div>
             </div>
         </div>

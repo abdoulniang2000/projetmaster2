@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/app/contexts/AuthContext';
-import { Home, Book, Edit3, MessageSquare, User, Bell, Shield, LogOut, Settings } from 'lucide-react';
+import { Home, Book, Edit3, MessageSquare, User, Bell, Shield, LogOut, Settings, Users, BookOpen, Mail, BarChart3, CheckCircle } from 'lucide-react';
 
 const studentLinks = [
     { href: '/dashboard/etudiant', label: 'Dashboard', icon: Home, color: 'orange' },
@@ -13,14 +13,21 @@ const studentLinks = [
 
 const enseignantLinks = [
     { href: '/dashboard/enseignant', label: 'Dashboard', icon: Home, color: 'orange' },
-    { href: '/dashboard/cours', label: 'Mes Cours', icon: Book, color: 'blue' },
-    { href: '/dashboard/devoirs', label: 'Devoirs', icon: Edit3, color: 'green' },
+    { href: '/dashboard/enseignant/cours', label: 'Gestion des Cours', icon: Book, color: 'blue' },
+    { href: '/dashboard/enseignant/supports', label: 'Supports Pédagogiques', icon: BookOpen, color: 'green' },
+    { href: '/dashboard/enseignant/devoirs', label: 'Gestion des Devoirs', icon: Edit3, color: 'purple' },
+    { href: '/dashboard/enseignant/corrections', label: 'Corrections', icon: CheckCircle, color: 'indigo' },
+    { href: '/dashboard/enseignant/annonces', label: 'Annonces', icon: Bell, color: 'yellow' },
+    { href: '/dashboard/enseignant/etudiants', label: 'Gestion Étudiants', icon: Users, color: 'red' },
 ];
 
 const adminLinks = [
-    { href: '/dashboard/admin', label: 'Dashboard', icon: Shield, color: 'orange' },
-    { href: '/dashboard/cours', label: 'Gestion Cours', icon: Book, color: 'blue' },
-    { href: '/dashboard/devoirs', label: 'Gestion Devoirs', icon: Edit3, color: 'green' },
+    { href: '/dashboard/admin', label: 'Dashboard', icon: BarChart3, color: 'blue' },
+    { href: '/dashboard/admin/users', label: 'Utilisateurs', icon: Users, color: 'orange' },
+    { href: '/dashboard/admin/modules', label: 'Modules', icon: BookOpen, color: 'green' },
+    { href: '/dashboard/admin/messages', label: 'Messagerie', icon: Mail, color: 'purple' },
+    { href: '/dashboard/admin/notifications', label: 'Notifications', icon: Bell, color: 'indigo' },
+    { href: '/dashboard/admin/profile', label: 'Profil', icon: User, color: 'yellow' },
 ];
 
 const commonLinks = [
@@ -43,7 +50,10 @@ export default function Sidebar() {
         else if (isEnseignant) navLinks = [...enseignantLinks];
         else navLinks = [...studentLinks];
 
-        navLinks = [...navLinks, ...commonLinks];
+        // Ajouter les liens communs seulement pour les non-admins
+        if (!isAdmin) {
+            navLinks = [...navLinks, ...commonLinks];
+        }
     }
 
     const getColorClasses = (color: string, isActive: boolean) => {
@@ -56,6 +66,12 @@ export default function Sidebar() {
                     return `${baseClasses} bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/25`;
                 case 'green':
                     return `${baseClasses} bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg shadow-green-500/25`;
+                case 'purple':
+                    return `${baseClasses} bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-lg shadow-purple-500/25`;
+                case 'indigo':
+                    return `${baseClasses} bg-gradient-to-r from-indigo-500 to-indigo-600 text-white shadow-lg shadow-indigo-500/25`;
+                case 'yellow':
+                    return `${baseClasses} bg-gradient-to-r from-yellow-500 to-yellow-600 text-white shadow-lg shadow-yellow-500/25`;
                 default:
                     return `${baseClasses} bg-gradient-to-r from-gray-500 to-gray-600 text-white`;
             }
@@ -67,6 +83,12 @@ export default function Sidebar() {
                     return `${baseClasses} hover:bg-gradient-to-r hover:from-blue-100 hover:to-blue-200 hover:text-blue-700 text-gray-700`;
                 case 'green':
                     return `${baseClasses} hover:bg-gradient-to-r hover:from-green-100 hover:to-green-200 hover:text-green-700 text-gray-700`;
+                case 'purple':
+                    return `${baseClasses} hover:bg-gradient-to-r hover:from-purple-100 hover:to-purple-200 hover:text-purple-700 text-gray-700`;
+                case 'indigo':
+                    return `${baseClasses} hover:bg-gradient-to-r hover:from-indigo-100 hover:to-indigo-200 hover:text-indigo-700 text-gray-700`;
+                case 'yellow':
+                    return `${baseClasses} hover:bg-gradient-to-r hover:from-yellow-100 hover:to-yellow-200 hover:text-yellow-700 text-gray-700`;
                 default:
                     return `${baseClasses} hover:bg-gray-100 text-gray-700`;
             }
@@ -79,6 +101,9 @@ export default function Sidebar() {
             case 'orange': return 'text-orange-500';
             case 'blue': return 'text-blue-500';
             case 'green': return 'text-green-500';
+            case 'purple': return 'text-purple-500';
+            case 'indigo': return 'text-indigo-500';
+            case 'yellow': return 'text-yellow-500';
             default: return 'text-gray-500';
         }
     };

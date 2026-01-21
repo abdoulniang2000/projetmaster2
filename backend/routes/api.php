@@ -75,26 +75,5 @@ Route::prefix('v1')->group(function () {
         Route::get('roles', function () {
             return \App\Models\Role::all();
         });
-        
-        Route::apiResource('cours', \App\Http\Controllers\Api\V1\CoursController::class);
-        Route::apiResource('devoirs', \App\Http\Controllers\Api\V1\DevoirController::class);
-
-        // Soumissions for a Devoir
-        Route::get('devoirs/{devoir}/soumissions', [\App\Http\Controllers\Api\V1\SoumissionController::class, 'index']);
-        Route::post('devoirs/{devoir}/soumissions', [\App\Http\Controllers\Api\V1\SoumissionController::class, 'store']);
-
-        // Note for a Soumission
-        Route::post('soumissions/{soumission}/notes', [\App\Http\Controllers\Api\V1\NoteController::class, 'store']);
-        Route::put('notes/{note}', [\App\Http\Controllers\Api\V1\NoteController::class, 'update']);
-
-        // Messaging
-        Route::get('messages', [\App\Http\Controllers\Api\V1\MessageController::class, 'index']);
-        Route::get('messages/{user}', [\App\Http\Controllers\Api\V1\MessageController::class, 'show']);
-        Route::post('messages', [\App\Http\Controllers\Api\V1\MessageController::class, 'store']);
-
-        // Notifications
-        Route::get('notifications', [\App\Http\Controllers\Api\V1\NotificationController::class, 'index']);
-        Route::patch('notifications/{notification}', [\App\Http\Controllers\Api\V1\NotificationController::class, 'markAsRead']);
-        Route::patch('notifications', [\App\Http\Controllers\Api\V1\NotificationController::class, 'markAllAsRead']);
     // });
 });

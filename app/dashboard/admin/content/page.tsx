@@ -8,10 +8,22 @@ import { Eye, EyeOff, Trash2, Search, Filter, AlertTriangle, CheckCircle, Messag
 
 interface ContentItem {
     id: number;
-    type: 'cours' | 'devoir' | 'message' | 'commentaire' | 'fichier' | 'video' | 'image';
-    titre: string;
-    contenu: string;
-    auteur: {
+    type: 'cours' | 'devoir' | 'soumission';
+    titre?: string;
+    nom?: string;
+    description?: string;
+    contenu?: string;
+    enseignant_id?: number;
+    cours_id?: number;
+    devoir_id?: number;
+    etudiant_id?: number;
+    fichier_joint?: string;
+    fichier_soumis?: string;
+    date_limite?: string;
+    date_soumission?: string;
+    created_at: string;
+    updated_at?: string;
+    auteur?: {
         id: number;
         first_name: string;
         last_name: string;
@@ -19,27 +31,9 @@ interface ContentItem {
         role: string;
     };
     statut: 'approuve' | 'en_attente' | 'rejete' | 'signale' | 'archive';
-    created_at: string;
-    updated_at?: string;
     signalements?: number;
     motif_signalement?: string[];
     priorite: 'basse' | 'moyenne' | 'haute' | 'urgente';
-    categorie?: string;
-    tags?: string[];
-    piece_jointe?: {
-        nom: string;
-        type: string;
-        taille: number;
-        url: string;
-    };
-    vue_par?: number;
-    moderation_notes?: string;
-    moderated_by?: {
-        id: number;
-        first_name: string;
-        last_name: string;
-    };
-    moderated_at?: string;
 }
 
 interface ModerationStats {
@@ -133,11 +127,10 @@ function ContentModerationPage() {
     }, []);
 
     const filteredContents = contents.filter(content => {
-        const matchesSearch = content.titre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            content.contenu.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            content.auteur.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            content.auteur.last_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            (content.tags && content.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase())));
+        const matchesSearch = (content.titre || content.nom || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (content.contenu || content.description || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (content.auteur?.first_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (content.auteur?.last_name || '').toLowerCase().includes(searchTerm.toLowerCase());
         const matchesType = filterType === 'all' || content.type === filterType;
         const matchesStatus = filterStatus === 'all' || content.statut === filterStatus;
         const matchesPriority = filterPriority === 'all' || content.priorite === filterPriority;
@@ -301,16 +294,8 @@ function ContentModerationPage() {
                 return <FileText className="w-5 h-5 text-blue-600" />;
             case 'devoir':
                 return <FileText className="w-5 h-5 text-green-600" />;
-            case 'message':
-                return <MessageSquare className="w-5 h-5 text-purple-600" />;
-            case 'commentaire':
-                return <MessageSquare className="w-5 h-5 text-gray-600" />;
-            case 'fichier':
+            case 'soumission':
                 return <File className="w-5 h-5 text-orange-600" />;
-            case 'video':
-                return <Video className="w-5 h-5 text-red-600" />;
-            case 'image':
-                return <Image className="w-5 h-5 text-indigo-600" />;
             default:
                 return <FileText className="w-5 h-5 text-gray-600" />;
         }
@@ -425,8 +410,7 @@ function ContentModerationPage() {
                                 <option value="all">Tous les types</option>
                                 <option value="cours">Cours</option>
                                 <option value="devoir">Devoirs</option>
-                                <option value="message">Messages</option>
-                                <option value="commentaire">Commentaires</option>
+                                <option value="soumission">Soumissions</option>
                             </select>
                         </div>
                         <div className="relative">
@@ -460,10 +444,12 @@ function ContentModerationPage() {
                                     <div className="flex items-center space-x-3">
                                         <span className="text-2xl">{getTypeIcon(content.type)}</span>
                                         <div>
-                                            <h3 className="font-semibold text-gray-900">{content.titre}</h3>
-                                            <p className="text-sm text-gray-600">
-                                                Par {content.auteur.first_name} {content.auteur.last_name} ({content.auteur.email})
-                                            </p>
+                                            <h3 className="font-semibold text-gray-900">{content.titre || content.nom || `Content ${content.id}`}</h3>
+                                            {content.auteur && (
+                                                <p className="text-sm text-gray-600">
+                                                    Par {content.auteur.first_name} {content.auteur.last_name} ({content.auteur.email})
+                                                </p>
+                                            )}
                                         </div>
                                     </div>
                                     <div className="flex items-center space-x-2">
@@ -479,7 +465,7 @@ function ContentModerationPage() {
                                 </div>
 
                                 <div className="mb-4">
-                                    <p className="text-gray-700 text-sm line-clamp-3">{content.contenu}</p>
+                                    <p className="text-gray-700 text-sm line-clamp-3">{content.contenu || content.description || 'Aucune description'}</p>
                                 </div>
 
                                 <div className="flex items-center justify-between">

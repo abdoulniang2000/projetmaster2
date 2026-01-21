@@ -12,22 +12,22 @@ interface User {
     id: number;
     first_name: string;
     last_name: string;
+    username: string;
     email: string;
-    roles: { name: string }[];
-    created_at: string;
-    last_login?: string;
-    is_active: boolean;
-    validated?: boolean;
     phone?: string;
-    department?: string;
-    student_id?: string;
-    profile_picture?: string;
-    login_count?: number;
-    failed_attempts?: number;
-    locked_until?: string;
-    password_changed_at?: string;
-    two_factor_enabled?: boolean;
+    address?: string;
+    city?: string;
+    country?: string;
+    postal_code?: string;
+    about?: string;
+    avatar?: string;
+    status: boolean;
+    last_login_at?: string;
+    last_login_ip?: string;
     email_verified_at?: string;
+    created_at: string;
+    updated_at: string;
+    role: string;
 }
 
 interface Role {
@@ -44,8 +44,10 @@ interface NewUser {
     password: string;
     role: string;
     phone?: string;
-    department?: string;
-    student_id?: string;
+    address?: string;
+    city?: string;
+    country?: string;
+    postal_code?: string;
 }
 
 interface UserActivity {
@@ -79,8 +81,10 @@ function UsersManagementPage() {
         password: '',
         role: 'etudiant',
         phone: '',
-        department: '',
-        student_id: ''
+        address: '',
+        city: '',
+        country: '',
+        postal_code: ''
     });
     const [userActivity, setUserActivity] = useState<UserActivity[]>([]);
     const [isAddingUser, setIsAddingUser] = useState(false);
@@ -109,8 +113,9 @@ function UsersManagementPage() {
     const filteredUsers = users.filter(user => {
         const matchesSearch = user.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
             user.last_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            user.email.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesRole = filterRole === 'all' || user.roles.some(role => role.name === filterRole);
+            user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            user.username.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesRole = filterRole === 'all' || user.role === filterRole;
         return matchesSearch && matchesRole;
     });
 
@@ -172,8 +177,10 @@ function UsersManagementPage() {
                 password: '',
                 role: 'etudiant',
                 phone: '',
-                department: '',
-                student_id: ''
+                address: '',
+                city: '',
+                country: '',
+                postal_code: ''
             });
 
             // Rafraîchir la liste
@@ -387,7 +394,7 @@ function UsersManagementPage() {
                             <div>
                                 <p className="text-sm font-medium text-gray-600">Admins</p>
                                 <p className="text-2xl font-bold text-orange-600">
-                                    {users.filter(u => u.roles.some(r => r.name === 'admin')).length}
+                                    {users.filter(u => u.role === 'admin').length}
                                 </p>
                             </div>
                             <div className="w-12 h-12 bg-gradient-to-br from-orange-400 to-orange-600 rounded-xl flex items-center justify-center text-white">
@@ -402,7 +409,7 @@ function UsersManagementPage() {
                             <div>
                                 <p className="text-sm font-medium text-gray-600">Enseignants</p>
                                 <p className="text-2xl font-bold text-blue-600">
-                                    {users.filter(u => u.roles.some(r => r.name === 'enseignant')).length}
+                                    {users.filter(u => u.role === 'enseignant').length}
                                 </p>
                             </div>
                             <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-xl flex items-center justify-center text-white">
@@ -417,7 +424,7 @@ function UsersManagementPage() {
                             <div>
                                 <p className="text-sm font-medium text-gray-600">Étudiants</p>
                                 <p className="text-2xl font-bold text-green-600">
-                                    {users.filter(u => u.roles.some(r => r.name === 'etudiant')).length}
+                                    {users.filter(u => u.role === 'etudiant').length}
                                 </p>
                             </div>
                             <div className="w-12 h-12 bg-gradient-to-br from-green-400 to-green-600 rounded-xl flex items-center justify-center text-white">
@@ -432,7 +439,7 @@ function UsersManagementPage() {
                             <div>
                                 <p className="text-sm font-medium text-gray-600">En attente</p>
                                 <p className="text-2xl font-bold text-yellow-600">
-                                    {users.filter(u => !u.validated).length}
+                                    {users.filter(u => !u.email_verified_at).length}
                                 </p>
                             </div>
                             <div className="w-12 h-12 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-xl flex items-center justify-center text-white">
@@ -567,10 +574,10 @@ function UsersManagementPage() {
                                                         {user.first_name} {user.last_name}
                                                     </p>
                                                     <p className="text-sm text-gray-500">
-                                                        ID: {user.id} {user.student_id && `| ${user.student_id}`}
+                                                        ID: {user.id} | @{user.username}
                                                     </p>
-                                                    {user.department && (
-                                                        <p className="text-xs text-gray-400">{user.department}</p>
+                                                    {user.city && (
+                                                        <p className="text-xs text-gray-400">{user.city}</p>
                                                     )}
                                                 </div>
                                             </div>
@@ -578,14 +585,11 @@ function UsersManagementPage() {
                                         <td className="py-3 px-4 text-gray-700">{user.email}</td>
                                         <td className="py-3 px-4">
                                             <div className="flex items-center space-x-2">
-                                                {user.roles.map((role, index) => (
-                                                    <span
-                                                        key={index}
-                                                        className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getRoleBadgeClass(role.name)}`}
-                                                    >
-                                                        {role.name}
-                                                    </span>
-                                                ))}
+                                                <span
+                                                    className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getRoleBadgeClass(user.role)}`}
+                                                >
+                                                    {user.role}
+                                                </span>
                                             </div>
                                         </td>
                                         <td className="py-3 px-4">
@@ -594,37 +598,31 @@ function UsersManagementPage() {
                                                     <input
                                                         type="checkbox"
                                                         className="sr-only peer"
-                                                        checked={user.is_active}
+                                                        checked={user.status}
                                                         onChange={(e) => handleToggleActive(user.id, e.target.checked)}
                                                     />
                                                     <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
                                                 </label>
                                                 <span className="text-sm font-medium">
-                                                    {user.is_active ? 'Actif' : 'Inactif'}
+                                                    {user.status ? 'Actif' : 'Inactif'}
                                                 </span>
-                                                {user.locked_until && new Date(user.locked_until) > new Date() && (
-                                                    <Ban className="w-4 h-4 text-red-500" />
-                                                )}
                                             </div>
                                         </td>
                                         <td className="py-3 px-4">
-                                            {user.validated ? (
+                                            {user.email_verified_at ? (
                                                 <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
                                                     <CheckCircle className="w-3 h-3 mr-1" />
-                                                    Validé
+                                                    Vérifié
                                                 </span>
                                             ) : (
-                                                <button
-                                                    onClick={() => handleValidateUser(user.id)}
-                                                    className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 hover:bg-yellow-200"
-                                                >
+                                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
                                                     <AlertCircle className="w-3 h-3 mr-1" />
-                                                    En attente
-                                                </button>
+                                                    Non vérifié
+                                                </span>
                                             )}
                                         </td>
                                         <td className="py-3 px-4 text-gray-700">
-                                            {user.last_login ? new Date(user.last_login).toLocaleDateString('fr-FR') : 'Jamais'}
+                                            {user.last_login_at ? new Date(user.last_login_at).toLocaleDateString('fr-FR') : 'Jamais'}
                                         </td>
                                         <td className="py-3 px-4">
                                             <div className="flex items-center space-x-1">
@@ -655,19 +653,6 @@ function UsersManagementPage() {
                                                     title="Réinitialiser le mot de passe"
                                                 >
                                                     <Key className="w-4 h-4" />
-                                                </button>
-                                                <button
-                                                    onClick={() => {
-                                                        if (user.locked_until && new Date(user.locked_until) > new Date()) {
-                                                            handleLockUnlock(user.id, false);
-                                                        } else {
-                                                            handleLockUnlock(user.id, true);
-                                                        }
-                                                    }}
-                                                    className="p-2 text-orange-600 hover:bg-orange-50 rounded-lg transition-colors"
-                                                    title={user.locked_until && new Date(user.locked_until) > new Date() ? 'Déverrouiller' : 'Verrouiller'}
-                                                >
-                                                    <Ban className="w-4 h-4" />
                                                 </button>
                                                 <button
                                                     onClick={() => {
@@ -803,30 +788,30 @@ function UsersManagementPage() {
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Département
+                                        Ville
                                     </label>
                                     <input
                                         type="text"
                                         className="input-gradient w-full px-4 py-3"
-                                        placeholder="Informatique, Mathématiques..."
-                                        value={newUser.department}
-                                        onChange={(e) => setNewUser({ ...newUser, department: e.target.value })}
+                                        placeholder="Dakar, Thiès..."
+                                        value={newUser.city}
+                                        onChange={(e) => setNewUser({ ...newUser, city: e.target.value })}
                                     />
                                 </div>
                             </div>
 
-                            {/* Champ ID Étudiant - conditionnel */}
+                            {/* Champ Adresse - conditionnel */}
                             {newUser.role === 'etudiant' && (
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        ID Étudiant
+                                        Adresse
                                     </label>
                                     <input
                                         type="text"
                                         className="input-gradient w-full px-4 py-3"
-                                        placeholder="EX: 2024001"
-                                        value={newUser.student_id}
-                                        onChange={(e) => setNewUser({ ...newUser, student_id: e.target.value })}
+                                        placeholder="Rue, quartier..."
+                                        value={newUser.address}
+                                        onChange={(e) => setNewUser({ ...newUser, address: e.target.value })}
                                     />
                                 </div>
                             )}
@@ -887,14 +872,11 @@ function UsersManagementPage() {
                                     </h4>
                                     <p className="text-gray-600">{selectedUser.email}</p>
                                     <div className="flex items-center space-x-2 mt-2">
-                                        {selectedUser.roles.map((role, index) => (
-                                            <span
-                                                key={index}
-                                                className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getRoleBadgeClass(role.name)}`}
-                                            >
-                                                {role.name}
-                                            </span>
-                                        ))}
+                                        <span
+                                            className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getRoleBadgeClass(selectedUser.role)}`}
+                                        >
+                                            {selectedUser.role}
+                                        </span>
                                     </div>
                                 </div>
                             </div>
@@ -905,28 +887,27 @@ function UsersManagementPage() {
                                     <p className="text-gray-900">{selectedUser.id}</p>
                                 </div>
                                 <div>
-                                    <p className="text-sm font-medium text-gray-500">ID Étudiant</p>
-                                    <p className="text-gray-900">{selectedUser.student_id || 'N/A'}</p>
+                                    <p className="text-sm font-medium text-gray-500">Nom d'utilisateur</p>
+                                    <p className="text-gray-900">@{selectedUser.username}</p>
                                 </div>
                                 <div>
                                     <p className="text-sm font-medium text-gray-500">Téléphone</p>
                                     <p className="text-gray-900">{selectedUser.phone || 'N/A'}</p>
                                 </div>
                                 <div>
-                                    <p className="text-sm font-medium text-gray-500">Département</p>
-                                    <p className="text-gray-900">{selectedUser.department || 'N/A'}</p>
+                                    <p className="text-sm font-medium text-gray-500">Ville</p>
+                                    <p className="text-gray-900">{selectedUser.city || 'N/A'}</p>
                                 </div>
                                 <div>
                                     <p className="text-sm font-medium text-gray-500">Statut</p>
                                     <p className="text-gray-900">
-                                        {selectedUser.is_active ? 'Actif' : 'Inactif'}
-                                        {selectedUser.locked_until && new Date(selectedUser.locked_until) > new Date() && ' (Verrouillé)'}
+                                        {selectedUser.status ? 'Actif' : 'Inactif'}
                                     </p>
                                 </div>
                                 <div>
-                                    <p className="text-sm font-medium text-gray-500">Validation</p>
+                                    <p className="text-sm font-medium text-gray-500">Email vérifié</p>
                                     <p className="text-gray-900">
-                                        {selectedUser.validated ? 'Validé' : 'En attente'}
+                                        {selectedUser.email_verified_at ? 'Oui' : 'Non'}
                                     </p>
                                 </div>
                                 <div>
@@ -936,16 +917,12 @@ function UsersManagementPage() {
                                 <div>
                                     <p className="text-sm font-medium text-gray-500">Dernière connexion</p>
                                     <p className="text-gray-900">
-                                        {selectedUser.last_login ? new Date(selectedUser.last_login).toLocaleDateString('fr-FR') : 'Jamais'}
+                                        {selectedUser.last_login_at ? new Date(selectedUser.last_login_at).toLocaleDateString('fr-FR') : 'Jamais'}
                                     </p>
                                 </div>
                                 <div>
-                                    <p className="text-sm font-medium text-gray-500">Nombre de connexions</p>
-                                    <p className="text-gray-900">{selectedUser.login_count || 0}</p>
-                                </div>
-                                <div>
-                                    <p className="text-sm font-medium text-gray-500">Tentatives échouées</p>
-                                    <p className="text-gray-900">{selectedUser.failed_attempts || 0}</p>
+                                    <p className="text-sm font-medium text-gray-500">Adresse IP</p>
+                                    <p className="text-gray-900">{selectedUser.last_login_ip || 'N/A'}</p>
                                 </div>
                             </div>
 
@@ -1039,12 +1016,12 @@ function UsersManagementPage() {
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Département</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Ville</label>
                                 <input
                                     type="text"
                                     className="input-gradient w-full"
-                                    defaultValue={selectedUser.department || ''}
-                                    id="edit-department"
+                                    defaultValue={selectedUser.city || ''}
+                                    id="edit-city"
                                 />
                             </div>
                         </div>
@@ -1061,14 +1038,14 @@ function UsersManagementPage() {
                                     const lastName = (document.getElementById('edit-last-name') as HTMLInputElement)?.value;
                                     const email = (document.getElementById('edit-email') as HTMLInputElement)?.value;
                                     const phone = (document.getElementById('edit-phone') as HTMLInputElement)?.value;
-                                    const department = (document.getElementById('edit-department') as HTMLInputElement)?.value;
+                                    const city = (document.getElementById('edit-city') as HTMLInputElement)?.value;
 
                                     handleEditUser({
                                         first_name: firstName,
                                         last_name: lastName,
                                         email: email,
                                         phone: phone || undefined,
-                                        department: department || undefined
+                                        city: city || undefined
                                     });
                                 }}
                                 className="btn-gradient-primary"

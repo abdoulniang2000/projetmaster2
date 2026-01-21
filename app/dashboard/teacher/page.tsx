@@ -108,20 +108,57 @@ function TeacherDashboard() {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const [coursesRes, materialsRes, assignmentsRes, submissionsRes, announcementsRes, studentsRes] = await Promise.all([
-                    axios.get('/v1/teacher/courses'),
-                    axios.get('/v1/teacher/materials'),
-                    axios.get('/v1/teacher/assignments'),
-                    axios.get('/v1/teacher/submissions'),
-                    axios.get('/v1/teacher/announcements'),
-                    axios.get('/v1/teacher/students')
+                const [coursesRes, assignmentsRes, submissionsRes, announcementsRes, analyticsRes] = await Promise.all([
+                    axios.get('/v1/cours?enseignant_id=' + (typeof window !== 'undefined' ? localStorage.getItem('user_id') : 1)),
+                    axios.get('/v1/devoirs'),
+                    axios.get('/v1/soumissions'),
+                    axios.get('/v1/annonces'),
+                    axios.get('/v1/analytics/dashboard')
                 ]);
-                setCourses(coursesRes.data || []);
-                setMaterials(materialsRes.data || []);
-                setAssignments(assignmentsRes.data || []);
-                setSubmissions(submissionsRes.data || []);
-                setAnnouncements(announcementsRes.data || []);
-                setStudents(studentsRes.data || []);
+
+                const coursesData = coursesRes.data.map((course: any) => ({
+                    ...course,
+                    title: course.nom,
+                    module: course.module?.nom || 'Non spécifié',
+                    semester: course.semestre?.nom || 'Non spécifié',
+                    students_count: course.etudiantsInscrits?.length || 0,
+                    materials_count: course.fichiers?.length || 0,
+                    assignments_count: course.devoirs?.length || 0
+                }));
+
+                const assignmentsData = assignmentsRes.data.map((assignment: any) => ({
+                    ...assignment,
+                    title: assignment.titre,
+                    description: assignment.description,
+                    course_title: assignment.cours?.nom,
+                    due_date: assignment.date_limite,
+                    submissions_count: assignment.soumissions?.length || 0,
+                    students_count: assignment.cours?.etudiantsInscrits?.length || 0,
+                    status: assignment.is_published ? 'published' : 'draft'
+                }));
+
+                const submissionsData = submissionsRes.data.map((submission: any) => ({
+                    ...submission,
+                    assignment_title: submission.devoir?.titre,
+                    student: submission.etudiant,
+                    grade: submission.note?.valeur,
+                    feedback: submission.note?.commentaire,
+                    status: submission.note ? 'graded' : 'submitted'
+                }));
+
+                const announcementsData = announcementsRes.data.map((announcement: any) => ({
+                    ...announcement,
+                    title: announcement.titre,
+                    content: announcement.contenu,
+                    course_title: announcement.cours?.nom,
+                    is_pinned: false,
+                    views_count: 0
+                }));
+
+                setCourses(coursesData || []);
+                setAssignments(assignmentsData || []);
+                setSubmissions(submissionsData || []);
+                setAnnouncements(announcementsData || []);
             } catch (error) {
                 console.error('Erreur lors du chargement des données:', error);
             } finally {
@@ -311,8 +348,8 @@ function TeacherDashboard() {
                 <button
                     onClick={() => setActiveTab('courses')}
                     className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${activeTab === 'courses'
-                            ? 'bg-white text-blue-600 shadow-sm'
-                            : 'text-gray-600 hover:text-gray-900'
+                        ? 'bg-white text-blue-600 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
                         }`}
                 >
                     <BookOpen className="w-4 h-4" />
@@ -321,8 +358,8 @@ function TeacherDashboard() {
                 <button
                     onClick={() => setActiveTab('materials')}
                     className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${activeTab === 'materials'
-                            ? 'bg-white text-blue-600 shadow-sm'
-                            : 'text-gray-600 hover:text-gray-900'
+                        ? 'bg-white text-blue-600 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
                         }`}
                 >
                     <Upload className="w-4 h-4" />
@@ -331,8 +368,8 @@ function TeacherDashboard() {
                 <button
                     onClick={() => setActiveTab('assignments')}
                     className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${activeTab === 'assignments'
-                            ? 'bg-white text-blue-600 shadow-sm'
-                            : 'text-gray-600 hover:text-gray-900'
+                        ? 'bg-white text-blue-600 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
                         }`}
                 >
                     <FileText className="w-4 h-4" />
@@ -341,8 +378,8 @@ function TeacherDashboard() {
                 <button
                     onClick={() => setActiveTab('submissions')}
                     className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${activeTab === 'submissions'
-                            ? 'bg-white text-blue-600 shadow-sm'
-                            : 'text-gray-600 hover:text-gray-900'
+                        ? 'bg-white text-blue-600 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
                         }`}
                 >
                     <CheckCircle className="w-4 h-4" />
@@ -351,8 +388,8 @@ function TeacherDashboard() {
                 <button
                     onClick={() => setActiveTab('announcements')}
                     className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${activeTab === 'announcements'
-                            ? 'bg-white text-blue-600 shadow-sm'
-                            : 'text-gray-600 hover:text-gray-900'
+                        ? 'bg-white text-blue-600 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
                         }`}
                 >
                     <Bell className="w-4 h-4" />
@@ -361,8 +398,8 @@ function TeacherDashboard() {
                 <button
                     onClick={() => setActiveTab('students')}
                     className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${activeTab === 'students'
-                            ? 'bg-white text-blue-600 shadow-sm'
-                            : 'text-gray-600 hover:text-gray-900'
+                        ? 'bg-white text-blue-600 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
                         }`}
                 >
                     <Users className="w-4 h-4" />
@@ -469,9 +506,9 @@ function TeacherDashboard() {
                                 <div key={material.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
                                     <div className="flex items-center space-x-3 flex-1">
                                         <div className={`w-10 h-10 rounded flex items-center justify-center ${material.type === 'pdf' ? 'bg-red-100' :
-                                                material.type === 'video' ? 'bg-blue-100' :
-                                                    material.type === 'ppt' ? 'bg-orange-100' :
-                                                        'bg-gray-100'
+                                            material.type === 'video' ? 'bg-blue-100' :
+                                                material.type === 'ppt' ? 'bg-orange-100' :
+                                                    'bg-gray-100'
                                             }`}>
                                             {material.type === 'pdf' ? '📄' :
                                                 material.type === 'video' ? '🎥' :
