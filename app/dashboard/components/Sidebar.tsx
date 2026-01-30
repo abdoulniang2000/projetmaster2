@@ -31,14 +31,11 @@ const adminLinks = [
     { href: '/dashboard/admin', label: 'Dashboard', icon: BarChart3, color: 'blue' },
     { href: '/dashboard/admin/users', label: 'Utilisateurs', icon: Users, color: 'orange' },
     { href: '/dashboard/admin/modules', label: 'Modules', icon: BookOpen, color: 'green' },
-    { href: '/dashboard/admin/messages', label: 'Messagerie', icon: Mail, color: 'purple' },
-    { href: '/dashboard/admin/notifications', label: 'Notifications', icon: Bell, color: 'indigo' },
-    { href: '/dashboard/admin/profile', label: 'Profil', icon: User, color: 'yellow' },
     { href: '/dashboard/messagerie', label: 'Messagerie Interne', icon: MessageSquare, color: 'blue' },
+    { href: '/dashboard/admin/notifications', label: 'Notifications', icon: Bell, color: 'indigo' },
 ];
 
 const commonLinks = [
-    { href: '/dashboard/notifications', label: 'Notifications', icon: Bell, color: 'orange' },
     { href: '/dashboard/profil', label: 'Profil', icon: User, color: 'green' },
 ];
 

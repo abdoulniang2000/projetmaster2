@@ -61,22 +61,29 @@ Route::prefix('v1')->group(function () {
         ]);
     });
 
-    // Protected routes (temporarily removed middleware)
-    // Route::middleware('auth.basic')->group(function () {
-        Route::post('/logout', [AuthController::class, 'logout']);
-        Route::get('/user', function (Request $request) {
-            return $request->user();
-        });
+    // Analytics
+    Route::get('/analytics/dashboard', [\App\Http\Controllers\Api\V1\AnalyticsController::class, 'dashboard']);
 
-        // Analytics
-        Route::get('/analytics/dashboard', [\App\Http\Controllers\Api\V1\AnalyticsController::class, 'dashboard']);
+    // User CRUD (temporairement non protégé pour le debug)
+    Route::apiResource('users', \App\Http\Controllers\UserController::class);
+    
+    // Roles
+    Route::get('roles', function () {
+        return \App\Models\Role::all();
+    });
 
-        // User CRUD
-        Route::apiResource('users', \App\Http\Controllers\UserController::class);
-        
-        // Roles
-        Route::get('roles', function () {
-            return \App\Models\Role::all();
-        });
-    // });
+    // Modules, Matieres, Semestres, Cours, Departements
+    Route::apiResource('modules', \App\Http\Controllers\Api\V1\ModuleController::class);
+    Route::apiResource('matieres', \App\Http\Controllers\Api\V1\MatiereController::class);
+    Route::apiResource('semestres', \App\Http\Controllers\Api\V1\SemestreController::class);
+    Route::apiResource('cours', \App\Http\Controllers\Api\V1\CoursController::class);
+    Route::apiResource('departements', \App\Http\Controllers\Api\V1\DepartementController::class);
+});
+
+// Protected routes (temporarily removed middleware)
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/logout', [AuthController::class, 'logout']);
+    Route::get('/user', function (Request $request) {
+        return $request->user();
+    });
 });

@@ -1,0 +1,596 @@
+{
+	"info": {
+		"_postman_id": "mastercampus-api-collection",
+		"name": "MasterCampus API Collection",
+		"description": "Collection complète pour l'API MasterCampus - Plateforme éducative",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Register User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"first_name\": \"John\",\n    \"last_name\": \"Doe\",\n    \"username\": \"johndoe\",\n    \"email\": \"john@example.com\",\n    \"password\": \"password123\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/register",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "register"]
+						},
+						"description": "Créer un nouveau compte utilisateur avec un rôle par défaut"
+					},
+					"response": []
+				},
+				{
+					"name": "Login",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"john@example.com\",\n    \"password\": \"password123\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/login",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "login"]
+						},
+						"description": "Authentifier l'utilisateur et retourner un token d'accès"
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    pm.collectionVariables.set('authToken', response.access_token);",
+									"    pm.collectionVariables.set('user', JSON.stringify(response.user));",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Logout",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/logout",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "logout"]
+						},
+						"description": "Déconnecter l'utilisateur et invalider le token"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Current User",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/user",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "user"]
+						},
+						"description": "Obtenir les informations de l'utilisateur authentifié"
+					},
+					"response": []
+				}
+			],
+			"description": "Endpoints pour l'authentification des utilisateurs"
+		},
+		{
+			"name": "System",
+			"item": [
+				{
+					"name": "API Test",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/test",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "test"]
+						},
+						"description": "Tester si l'API fonctionne correctement"
+					},
+					"response": []
+				},
+				{
+					"name": "Simple Login Test",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"test@example.com\",\n    \"password\": \"test123\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/login-simple",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "login-simple"]
+						},
+						"description": "Test simple de connexion pour le debug"
+					},
+					"response": []
+				},
+				{
+					"name": "Minimal Login Test",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/login-minimal",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "login-minimal"]
+						},
+						"description": "Test minimal de connexion"
+					},
+					"response": []
+				}
+			],
+			"description": "Endpoints système et de test"
+		},
+		{
+			"name": "Users Management",
+			"item": [
+				{
+					"name": "Get All Users",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/users",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "users"]
+						},
+						"description": "Lister tous les utilisateurs"
+					},
+					"response": []
+				},
+				{
+					"name": "Create User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"first_name\": \"Jane\",\n    \"last_name\": \"Smith\",\n    \"username\": \"janesmith\",\n    \"email\": \"jane@example.com\",\n    \"password\": \"password123\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/users",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "users"]
+						},
+						"description": "Créer un nouvel utilisateur"
+					},
+					"response": []
+				},
+				{
+					"name": "Get User by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/users/{{userId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "users", "{{userId}}"]
+						},
+						"description": "Obtenir un utilisateur par son ID"
+					},
+					"response": []
+				},
+				{
+					"name": "Update User",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"first_name\": \"John Updated\",\n    \"last_name\": \"Doe Updated\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/users/{{userId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "users", "{{userId}}"]
+						},
+						"description": "Mettre à jour un utilisateur"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete User",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/users/{{userId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "users", "{{userId}}"]
+						},
+						"description": "Supprimer un utilisateur"
+					},
+					"response": []
+				}
+			],
+			"description": "Gestion des utilisateurs (CRUD)"
+		},
+		{
+			"name": "Educational Content",
+			"item": [
+				{
+					"name": "Modules",
+					"item": [
+						{
+							"name": "Get All Modules",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/modules",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "v1", "modules"]
+								},
+								"description": "Lister tous les modules"
+							},
+							"response": []
+						},
+						{
+							"name": "Create Module",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"nom\": \"Module Test\",\n    \"titre\": \"Titre du Module\",\n    \"contenu\": \"Contenu du module\",\n    \"ordre\": 1,\n    \"cours_id\": 1\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/modules",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "v1", "modules"]
+								},
+								"description": "Créer un nouveau module"
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Matières",
+					"item": [
+						{
+							"name": "Get All Matières",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/matieres",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "v1", "matieres"]
+								},
+								"description": "Lister toutes les matières"
+							},
+							"response": []
+						},
+						{
+							"name": "Create Matière",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"nom\": \"Mathématiques\",\n    \"code\": \"MATH101\",\n    \"description\": \"Description de la matière\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/matieres",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "v1", "matieres"]
+								},
+								"description": "Créer une nouvelle matière"
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Semestres",
+					"item": [
+						{
+							"name": "Get All Semestres",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/semestres",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "v1", "semestres"]
+								},
+								"description": "Lister tous les semestres"
+							},
+							"response": []
+						},
+						{
+							"name": "Create Semestre",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"nom\": \"Semestre 1\",\n    \"annee_academique\": \"2024-2025\",\n    \"ordre\": 1\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/semestres",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "v1", "semestres"]
+								},
+								"description": "Créer un nouveau semestre"
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Cours",
+					"item": [
+						{
+							"name": "Get All Cours",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/cours",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "v1", "cours"]
+								},
+								"description": "Lister tous les cours"
+							},
+							"response": []
+						},
+						{
+							"name": "Create Cours",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									},
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"titre\": \"Cours Test\",\n    \"description\": \"Description du cours\",\n    \"matiere_id\": 1,\n    \"enseignant_id\": 1\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/cours",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "v1", "cours"]
+								},
+								"description": "Créer un nouveau cours"
+							},
+							"response": []
+						}
+					]
+				}
+			],
+			"description": "Gestion du contenu éducatif"
+		},
+		{
+			"name": "Analytics",
+			"item": [
+				{
+					"name": "Dashboard Analytics",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/analytics/dashboard",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "analytics", "dashboard"]
+						},
+						"description": "Obtenir les statistiques du dashboard"
+					},
+					"response": []
+				}
+			],
+			"description": "Endpoints pour les analytics et statistiques"
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8000",
+			"description": "Base URL de l'API MasterCampus"
+		},
+		{
+			"key": "authToken",
+			"value": "",
+			"description": "Token d'authentification généré après login"
+		},
+		{
+			"key": "userId",
+			"value": "1",
+			"description": "ID de l'utilisateur (à modifier selon besoin)"
+		},
+		{
+			"key": "moduleId",
+			"value": "1",
+			"description": "ID du module (à modifier selon besoin)"
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	]
+}

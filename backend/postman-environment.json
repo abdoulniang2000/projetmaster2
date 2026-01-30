@@ -1,0 +1,85 @@
+{
+	"id": "mastercampus-api-environment",
+	"name": "MasterCampus API Environment",
+	"values": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8000",
+			"description": "URL de base de l'API MasterCampus",
+			"enabled": true
+		},
+		{
+			"key": "authToken",
+			"value": "",
+			"description": "Token d'authentification Bearer (généré automatiquement après login)",
+			"enabled": true
+		},
+		{
+			"key": "userId",
+			"value": "1",
+			"description": "ID de l'utilisateur courant",
+			"enabled": true
+		},
+		{
+			"key": "moduleId",
+			"value": "1",
+			"description": "ID du module à tester",
+			"enabled": true
+		},
+		{
+			"key": "matiereId",
+			"value": "1",
+			"description": "ID de la matière à tester",
+			"enabled": true
+		},
+		{
+			"key": "semestreId",
+			"value": "1",
+			"description": "ID du semestre à tester",
+			"enabled": true
+		},
+		{
+			"key": "coursId",
+			"value": "1",
+			"description": "ID du cours à tester",
+			"enabled": true
+		},
+		{
+			"key": "supportId",
+			"value": "1",
+			"description": "ID du support de cours à tester",
+			"enabled": true
+		},
+		{
+			"key": "devoirId",
+			"value": "1",
+			"description": "ID du devoir à tester",
+			"enabled": true
+		},
+		{
+			"key": "forumId",
+			"value": "1",
+			"description": "ID du forum à tester",
+			"enabled": true
+		},
+		{
+			"key": "notificationId",
+			"value": "1",
+			"description": "ID de la notification à tester",
+			"enabled": true
+		},
+		{
+			"key": "conversationId",
+			"value": "1",
+			"description": "ID de la conversation à tester",
+			"enabled": true
+		},
+		{
+			"key": "messageId",
+			"value": "1",
+			"description": "ID du message à tester",
+			"enabled": true
+		}
+	],
+	"_postman_variable_scope": "environment"
+}

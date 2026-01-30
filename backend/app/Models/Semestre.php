@@ -11,7 +11,6 @@ class Semestre extends Model
 
     protected $fillable = [
         'nom',
-        'description',
         'date_debut',
         'date_fin',
         'is_active'

@@ -52,32 +52,19 @@ interface Semestre {
 
 interface NewModule {
     nom: string;
-    code: string;
-    description: string;
-    semestre: string;
-    matiere: string;
-    enseignant_id: number;
-    credits: number;
-    volume_horaire: number;
-    objectifs: string[];
-    prerequis: string[];
-    evaluation_method: string;
-    coefficient: number;
 }
 
 interface NewMatiere {
     nom: string;
-    description: string;
-    code: string;
-    departement: string;
-    responsable_id?: number;
+    module_id: number | '';
+    semestre_id: number | '';
 }
 
 interface NewSemestre {
     nom: string;
-    annee_academique: string;
     date_debut: string;
     date_fin: string;
+    is_active: boolean;
 }
 
 interface ModuleStats {
@@ -92,6 +79,7 @@ function ModulesManagementPage() {
     const [matieres, setMatieres] = useState<Matiere[]>([]);
     const [semestres, setSemestres] = useState<Semestre[]>([]);
     const [enseignants, setEnseignants] = useState<any[]>([]);
+    const [cours, setCours] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<'modules' | 'matieres' | 'semestres'>('modules');
     const [searchTerm, setSearchTerm] = useState('');
@@ -106,46 +94,35 @@ function ModulesManagementPage() {
         average_order: 0
     });
     const [newModule, setNewModule] = useState<NewModule>({
-        nom: '',
-        code: '',
-        description: '',
-        semestre: '',
-        matiere: '',
-        enseignant_id: 0,
-        credits: 3,
-        volume_horaire: 30,
-        objectifs: [],
-        prerequis: [],
-        evaluation_method: '',
-        coefficient: 1
+        nom: ''
     });
     const [newMatiere, setNewMatiere] = useState<NewMatiere>({
         nom: '',
-        description: '',
-        code: '',
-        departement: '',
-        responsable_id: 0
+        module_id: '',
+        semestre_id: ''
     });
     const [newSemestre, setNewSemestre] = useState<NewSemestre>({
         nom: '',
-        annee_academique: '',
         date_debut: '',
-        date_fin: ''
+        date_fin: '',
+        is_active: true
     });
 
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const [modulesRes, matieresRes, semestresRes, enseignantsRes] = await Promise.all([
+                const [modulesRes, matieresRes, semestresRes, enseignantsRes, coursRes] = await Promise.all([
                     axios.get('/v1/modules'),
                     axios.get('/v1/matieres'),
                     axios.get('/v1/semestres'),
-                    axios.get('/v1/users?role=enseignant')
+                    axios.get('/v1/users?role=enseignant'),
+                    axios.get('/v1/cours') // Fetch courses
                 ]);
                 setModules(modulesRes.data || []);
                 setMatieres(matieresRes.data || []);
                 setSemestres(semestresRes.data || []);
                 setEnseignants(enseignantsRes.data || []);
+                setCours(coursRes.data || []);
 
                 // Calculer les statistiques
                 const modulesData = modulesRes.data || [];
@@ -168,6 +145,7 @@ function ModulesManagementPage() {
                 setMatieres([]);
                 setSemestres([]);
                 setEnseignants([]);
+                setCours([]);
             } finally {
                 setLoading(false);
             }
@@ -175,6 +153,40 @@ function ModulesManagementPage() {
 
         fetchData();
     }, []);
+
+    // Ajouter un useEffect pour recharger les modules quand l'onglet actif change
+    useEffect(() => {
+        if (activeTab === 'modules' && !loading) {
+            const refreshModules = async () => {
+                try {
+                    console.log('Rechargement des modules...');
+                    const modulesRes = await axios.get('/v1/modules');
+                    console.log('Modules rechargés:', modulesRes.data);
+                    setModules(modulesRes.data || []);
+                } catch (error) {
+                    console.error('Erreur lors du rechargement des modules:', error);
+                }
+            };
+            refreshModules();
+        }
+    }, [activeTab, loading]);
+
+    // Ajouter un useEffect pour recharger les semestres quand l'onglet semestres devient actif
+    useEffect(() => {
+        if (activeTab === 'semestres' && !loading) {
+            const refreshSemestres = async () => {
+                try {
+                    console.log('Rechargement des semestres...');
+                    const semestresRes = await axios.get('/v1/semestres');
+                    console.log('Semestres rechargés:', semestresRes.data);
+                    setSemestres(semestresRes.data || []);
+                } catch (error) {
+                    console.error('Erreur lors du rechargement des semestres:', error);
+                }
+            };
+            refreshSemestres();
+        }
+    }, [activeTab, loading]);
 
     const filteredModules = modules.filter(module =>
         module.titre.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -191,16 +203,6 @@ function ModulesManagementPage() {
         semestre.annee_academique.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    const handleToggleModule = async (moduleId: number) => {
-        try {
-            await axios.delete(`/v1/modules/${moduleId}`);
-            const modulesRes = await axios.get('/v1/modules');
-            setModules(modulesRes.data || []);
-        } catch (error) {
-            console.error('Erreur lors de la suppression:', error);
-        }
-    };
-
     const handleDeleteModule = async (moduleId: number) => {
         if (confirm('Êtes-vous sûr de vouloir supprimer ce module ?')) {
             try {
@@ -214,79 +216,96 @@ function ModulesManagementPage() {
     };
 
     const handleAddModule = async () => {
+        console.log('handleAddModule appelé');
+        console.log('newModule:', newModule);
+
         try {
-            await axios.post('/v1/modules', {
-                cours_id: newModule.enseignant_id,
-                titre: newModule.nom,
-                contenu: newModule.description,
-                ordre: newModule.credits || 1
-            });
+            if (!newModule.nom) {
+                console.error('Validation failed: Missing required fields');
+                alert('Veuillez entrer un nom de module');
+                return;
+            }
+
+            console.log('Envoi à l\'API:', newModule);
+            const response = await axios.post('/v1/modules', newModule);
+            console.log('Réponse API:', response.data);
+
+            // Fermer le modal et réinitialiser le formulaire
             setShowAddModal(false);
             setNewModule({
-                nom: '',
-                code: '',
-                description: '',
-                semestre: '',
-                matiere: '',
-                enseignant_id: 0,
-                credits: 3,
-                volume_horaire: 30,
-                objectifs: [],
-                prerequis: [],
-                evaluation_method: '',
-                coefficient: 1
+                nom: ''
             });
-            const modulesRes = await axios.get('/v1/modules');
-            setModules(modulesRes.data || []);
-        } catch (error) {
-            console.error('Erreur lors de l\'ajout du module:', error);
-        }
-    };
 
-    const handleEditModule = async (moduleId: number, moduleData: Partial<Module>) => {
-        try {
-            await axios.put(`/v1/modules/${moduleId}`, moduleData);
-            setShowEditModal(false);
-            setSelectedItem(null);
+            // Rafraîchir immédiatement la liste des modules
+            console.log('Rafraîchissement de la liste des modules...');
             const modulesRes = await axios.get('/v1/modules');
+            console.log('Modules après rafraîchissement:', modulesRes.data);
             setModules(modulesRes.data || []);
-        } catch (error) {
-            console.error('Erreur lors de la modification du module:', error);
+
+            alert('Module créé avec succès!');
+        } catch (error: any) {
+            console.error("Erreur lors de l'ajout du module:", error);
+            console.error("Détails de l'erreur:", error.response?.data);
+            alert('Erreur lors de la création: ' + (error.response?.data?.message || error.message));
         }
     };
 
     const handleAddMatiere = async () => {
         try {
+            if (!newMatiere.nom || !newMatiere.module_id || !newMatiere.semestre_id) {
+                console.error('Validation failed: Missing required fields');
+                return;
+            }
+
             await axios.post('/v1/matieres', newMatiere);
             setShowAddModal(false);
             setNewMatiere({
                 nom: '',
-                description: '',
-                code: '',
-                departement: '',
-                responsable_id: 0
+                module_id: '',
+                semestre_id: ''
             });
             const matieresRes = await axios.get('/v1/matieres');
             setMatieres(matieresRes.data || []);
         } catch (error) {
-            console.error('Erreur lors de l\'ajout de la matière:', error);
+            console.error("Erreur lors de l'ajout de la matière:", error);
         }
     };
 
     const handleAddSemestre = async () => {
+        console.log('handleAddSemestre appelé');
+        console.log('newSemestre:', newSemestre);
+
         try {
-            await axios.post('/v1/semestres', newSemestre);
+            if (!newSemestre.nom) {
+                console.error('Validation failed: Missing required fields');
+                alert('Veuillez entrer un nom de semestre');
+                return;
+            }
+
+            console.log('Envoi à l\'API semestres:', newSemestre);
+            const response = await axios.post('/v1/semestres', newSemestre);
+            console.log('Réponse API semestres:', response.data);
+
+            // Fermer le modal et réinitialiser le formulaire
             setShowAddModal(false);
             setNewSemestre({
                 nom: '',
-                annee_academique: '',
                 date_debut: '',
-                date_fin: ''
+                date_fin: '',
+                is_active: true
             });
+
+            // Rafraîchir immédiatement la liste des semestres
+            console.log('Rafraîchissement de la liste des semestres...');
             const semestresRes = await axios.get('/v1/semestres');
+            console.log('Semestres après rafraîchissement:', semestresRes.data);
             setSemestres(semestresRes.data || []);
-        } catch (error) {
-            console.error('Erreur lors de l\'ajout du semestre:', error);
+
+            alert('Semestre créé avec succès!');
+        } catch (error: any) {
+            console.error("Erreur lors de l'ajout du semestre:", error);
+            console.error("Détails de l'erreur:", error.response?.data);
+            alert('Erreur lors de la création: ' + (error.response?.data?.message || error.message));
         }
     };
 
@@ -301,7 +320,7 @@ function ModulesManagementPage() {
             link.click();
             link.remove();
         } catch (error) {
-            console.error('Erreur lors de l\'export:', error);
+            console.error("Erreur lors de l'export:", error);
         }
     };
 
@@ -504,7 +523,7 @@ function ModulesManagementPage() {
                                             <td className="py-3 px-4">
                                                 <div className="flex items-center space-x-2">
                                                     <button
-                                                        onClick={() => handleToggleModule(module.id)}
+                                                        onClick={() => handleDeleteModule(module.id)}
                                                         className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                                                         title="Supprimer"
                                                     >
@@ -579,6 +598,242 @@ function ModulesManagementPage() {
                         </div>
                     </CardContent>
                 </Card>
+            )}
+
+            {/* Modal Ajout Module */}
+            {showAddModal && activeTab === 'modules' && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto animate-scaleIn">
+                        <div className="flex items-center justify-between mb-6">
+                            <h3 className="text-2xl font-bold text-gray-900">Ajouter un module</h3>
+                            <button
+                                onClick={() => setShowAddModal(false)}
+                                className="text-gray-400 hover:text-gray-600 transition-colors p-2 hover:bg-gray-100 rounded-lg"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        <form onSubmit={(e) => {
+                            console.log('Form submitted');
+                            e.preventDefault();
+                            console.log('Calling handleAddModule');
+                            handleAddModule();
+                        }} className="space-y-6">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Nom du module <span className="text-red-500">*</span>
+                                </label>
+                                <input
+                                    type="text"
+                                    required
+                                    className="input-gradient w-full px-4 py-3"
+                                    placeholder="Entrez le nom du module"
+                                    value={newModule.nom}
+                                    onChange={(e) => setNewModule({ ...newModule, nom: e.target.value })}
+                                />
+                            </div>
+
+                            <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowAddModal(false)}
+                                    className="px-6 py-3 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-all duration-200 font-medium"
+                                >
+                                    Annuler
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="btn-gradient-primary px-6 py-3 rounded-lg font-medium flex items-center space-x-2"
+                                >
+                                    <Plus className="w-4 h-4" />
+                                    <span>Ajouter le module</span>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal Ajout Matière */}
+            {showAddModal && activeTab === 'matieres' && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto animate-scaleIn">
+                        <div className="flex items-center justify-between mb-6">
+                            <h3 className="text-2xl font-bold text-gray-900">Ajouter une matière</h3>
+                            <button
+                                onClick={() => setShowAddModal(false)}
+                                className="text-gray-400 hover:text-gray-600 transition-colors p-2 hover:bg-gray-100 rounded-lg"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        <form onSubmit={(e) => {
+                            e.preventDefault();
+                            handleAddMatiere();
+                        }} className="space-y-6">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Nom de la matière <span className="text-red-500">*</span>
+                                </label>
+                                <input
+                                    type="text"
+                                    required
+                                    className="input-gradient w-full px-4 py-3"
+                                    placeholder="Entrez le nom de la matière"
+                                    value={newMatiere.nom}
+                                    onChange={(e) => setNewMatiere({ ...newMatiere, nom: e.target.value })}
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Module <span className="text-red-500">*</span>
+                                </label>
+                                <select
+                                    required
+                                    className="input-gradient w-full px-4 py-3"
+                                    value={newMatiere.module_id}
+                                    onChange={(e) => setNewMatiere({ ...newMatiere, module_id: parseInt(e.target.value) })}
+                                >
+                                    <option value="">Sélectionner un module</option>
+                                    {modules.map((m: any) => (
+                                        <option key={m.id} value={m.id}>{m.nom || m.titre}</option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Semestre <span className="text-red-500">*</span>
+                                </label>
+                                <select
+                                    required
+                                    className="input-gradient w-full px-4 py-3"
+                                    value={newMatiere.semestre_id}
+                                    onChange={(e) => setNewMatiere({ ...newMatiere, semestre_id: parseInt(e.target.value) })}
+                                >
+                                    <option value="">Sélectionner un semestre</option>
+                                    {semestres.map((s: any) => (
+                                        <option key={s.id} value={s.id}>{s.nom}</option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowAddModal(false)}
+                                    className="px-6 py-3 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-all duration-200 font-medium"
+                                >
+                                    Annuler
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="btn-gradient-primary px-6 py-3 rounded-lg font-medium flex items-center space-x-2"
+                                >
+                                    <Plus className="w-4 h-4" />
+                                    <span>Ajouter la matière</span>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal Ajout Semestre */}
+            {showAddModal && activeTab === 'semestres' && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto animate-scaleIn">
+                        <div className="flex items-center justify-between mb-6">
+                            <h3 className="text-2xl font-bold text-gray-900">Ajouter un semestre</h3>
+                            <button
+                                onClick={() => setShowAddModal(false)}
+                                className="text-gray-400 hover:text-gray-600 transition-colors p-2 hover:bg-gray-100 rounded-lg"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        <form onSubmit={(e) => {
+                            console.log('Semestre form submitted');
+                            e.preventDefault();
+                            console.log('Calling handleAddSemestre');
+                            handleAddSemestre();
+                        }} className="space-y-6">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Nom du semestre <span className="text-red-500">*</span>
+                                </label>
+                                <input
+                                    type="text"
+                                    required
+                                    className="input-gradient w-full px-4 py-3"
+                                    placeholder="Entrez le nom du semestre"
+                                    value={newSemestre.nom}
+                                    onChange={(e) => setNewSemestre({ ...newSemestre, nom: e.target.value })}
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Date de début
+                                </label>
+                                <input
+                                    type="date"
+                                    className="input-gradient w-full px-4 py-3"
+                                    value={newSemestre.date_debut}
+                                    onChange={(e) => setNewSemestre({ ...newSemestre, date_debut: e.target.value })}
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Date de fin
+                                </label>
+                                <input
+                                    type="date"
+                                    className="input-gradient w-full px-4 py-3"
+                                    value={newSemestre.date_fin}
+                                    onChange={(e) => setNewSemestre({ ...newSemestre, date_fin: e.target.value })}
+                                    min={newSemestre.date_debut}
+                                />
+                            </div>
+
+                            <div>
+                                <label className="flex items-center space-x-2">
+                                    <input
+                                        type="checkbox"
+                                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                        checked={newSemestre.is_active}
+                                        onChange={(e) => setNewSemestre({ ...newSemestre, is_active: e.target.checked })}
+                                    />
+                                    <span className="text-sm font-medium text-gray-700">
+                                        Semestre actif
+                                    </span>
+                                </label>
+                            </div>
+
+                            <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowAddModal(false)}
+                                    className="px-6 py-3 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-all duration-200 font-medium"
+                                >
+                                    Annuler
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="btn-gradient-primary px-6 py-3 rounded-lg font-medium flex items-center space-x-2"
+                                >
+                                    <Plus className="w-4 h-4" />
+                                    <span>Ajouter le semestre</span>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
             )}
         </div>
     );
