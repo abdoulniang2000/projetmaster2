@@ -13,7 +13,8 @@ class Matiere extends Model
         'nom',
         'code',
         'description',
-        'departement_id',
+        'module_id',
+        'semestre_id',
         'credits'
     ];
 
@@ -21,9 +22,14 @@ class Matiere extends Model
         'credits' => 'integer'
     ];
 
-    public function departement()
+    public function module()
     {
-        return $this->belongsTo(Departement::class);
+        return $this->belongsTo(Module::class);
+    }
+
+    public function semestre()
+    {
+        return $this->belongsTo(Semestre::class);
     }
 
     public function cours()

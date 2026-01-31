@@ -22,11 +22,12 @@ class MatiereController extends Controller
                 'nom' => 'required|string|max:255',
                 'description' => 'required|string',
                 'code' => 'required|string|max:255|unique:matieres,code',
-                'departement_id' => 'required|integer|exists:departements,id',
+                'module_id' => 'required|integer|exists:modules,id',
+                'semestre_id' => 'required|integer|exists:semestres,id',
                 'credits' => 'sometimes|integer|min:1'
             ]);
 
-            // Créer la matière avec departement_id
+            // Créer la matière avec module_id et semestre_id
             $matiereData = $request->all();
             $matiereData['credits'] = $request->input('credits', 1);
             
@@ -55,7 +56,8 @@ class MatiereController extends Controller
                 'nom' => 'sometimes|required|string|max:255',
                 'description' => 'sometimes|required|string',
                 'code' => 'sometimes|required|string|max:255|unique:matieres,code,' . $matiere->id,
-                'departement_id' => 'sometimes|required|integer|exists:departements,id',
+                'module_id' => 'sometimes|required|integer|exists:modules,id',
+                'semestre_id' => 'sometimes|required|integer|exists:semestres,id',
                 'credits' => 'sometimes|integer|min:1'
             ]);
 

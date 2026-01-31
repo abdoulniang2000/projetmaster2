@@ -56,8 +56,11 @@ interface NewModule {
 
 interface NewMatiere {
     nom: string;
+    description: string;
+    code: string;
     module_id: number | '';
     semestre_id: number | '';
+    credits: number;
 }
 
 interface NewSemestre {
@@ -80,6 +83,7 @@ function ModulesManagementPage() {
     const [semestres, setSemestres] = useState<Semestre[]>([]);
     const [enseignants, setEnseignants] = useState<any[]>([]);
     const [cours, setCours] = useState<any[]>([]);
+    const [departements, setDepartements] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<'modules' | 'matieres' | 'semestres'>('modules');
     const [searchTerm, setSearchTerm] = useState('');
@@ -98,8 +102,11 @@ function ModulesManagementPage() {
     });
     const [newMatiere, setNewMatiere] = useState<NewMatiere>({
         nom: '',
+        description: '',
+        code: '',
         module_id: '',
-        semestre_id: ''
+        semestre_id: '',
+        credits: 1
     });
     const [newSemestre, setNewSemestre] = useState<NewSemestre>({
         nom: '',
@@ -111,18 +118,20 @@ function ModulesManagementPage() {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const [modulesRes, matieresRes, semestresRes, enseignantsRes, coursRes] = await Promise.all([
+                const [modulesRes, matieresRes, semestresRes, enseignantsRes, coursRes, departementsRes] = await Promise.all([
                     axios.get('/v1/modules'),
                     axios.get('/v1/matieres'),
                     axios.get('/v1/semestres'),
                     axios.get('/v1/users?role=enseignant'),
-                    axios.get('/v1/cours') // Fetch courses
+                    axios.get('/v1/cours'), // Fetch courses
+                    axios.get('/v1/departements') // Fetch departements
                 ]);
                 setModules(modulesRes.data || []);
                 setMatieres(matieresRes.data || []);
                 setSemestres(semestresRes.data || []);
                 setEnseignants(enseignantsRes.data || []);
                 setCours(coursRes.data || []);
+                setDepartements(departementsRes.data || []);
 
                 // Calculer les statistiques
                 const modulesData = modulesRes.data || [];
@@ -146,6 +155,7 @@ function ModulesManagementPage() {
                 setSemestres([]);
                 setEnseignants([]);
                 setCours([]);
+                setDepartements([]);
             } finally {
                 setLoading(false);
             }
@@ -185,6 +195,28 @@ function ModulesManagementPage() {
                 }
             };
             refreshSemestres();
+        }
+    }, [activeTab, loading]);
+
+    // Ajouter un useEffect pour recharger les semestres et modules quand l'onglet matières devient actif
+    useEffect(() => {
+        if (activeTab === 'matieres' && !loading) {
+            const refreshMatieresData = async () => {
+                try {
+                    console.log('Rechargement des données pour matières...');
+                    const [semestresRes, modulesRes] = await Promise.all([
+                        axios.get('/v1/semestres'),
+                        axios.get('/v1/modules')
+                    ]);
+                    console.log('Semestres rechargés:', semestresRes.data);
+                    console.log('Modules rechargés:', modulesRes.data);
+                    setSemestres(semestresRes.data || []);
+                    setModules(modulesRes.data || []);
+                } catch (error) {
+                    console.error('Erreur lors du rechargement des données pour matières:', error);
+                }
+            };
+            refreshMatieresData();
         }
     }, [activeTab, loading]);
 
@@ -251,23 +283,78 @@ function ModulesManagementPage() {
     };
 
     const handleAddMatiere = async () => {
+        console.log('=== handleAddMatiere appelé ===');
+        console.log('Données du formulaire:', newMatiere);
+
         try {
-            if (!newMatiere.nom || !newMatiere.module_id || !newMatiere.semestre_id) {
-                console.error('Validation failed: Missing required fields');
+            // Validation des champs
+            if (!newMatiere.nom) {
+                console.error('Validation failed: nom manquant');
+                alert('Le nom de la matière est obligatoire');
+                return;
+            }
+            if (!newMatiere.description) {
+                console.error('Validation failed: description manquante');
+                alert('La description de la matière est obligatoire');
+                return;
+            }
+            if (!newMatiere.code) {
+                console.error('Validation failed: code manquant');
+                alert('Le code de la matière est obligatoire');
+                return;
+            }
+            if (!newMatiere.module_id) {
+                console.error('Validation failed: module_id manquant');
+                alert('Le module est obligatoire');
+                return;
+            }
+            if (!newMatiere.semestre_id) {
+                console.error('Validation failed: semestre_id manquant');
+                alert('Le semestre est obligatoire');
                 return;
             }
 
-            await axios.post('/v1/matieres', newMatiere);
+            console.log('Validation réussie, envoi à l\'API...');
+            console.log('URL: POST /v1/matieres');
+            console.log('Payload:', JSON.stringify(newMatiere, null, 2));
+
+            const response = await axios.post('/v1/matieres', newMatiere);
+            console.log('Réponse API:', response.data);
+            console.log('Status:', response.status);
+
+            // Fermer le modal
             setShowAddModal(false);
+            console.log('Modal fermé');
+
+            // Réinitialiser le formulaire
             setNewMatiere({
                 nom: '',
+                description: '',
+                code: '',
                 module_id: '',
-                semestre_id: ''
+                semestre_id: '',
+                credits: 1
             });
+            console.log('Formulaire réinitialisé');
+
+            // Rafraîchir la liste des matières
+            console.log('Rafraîchissement de la liste des matières...');
             const matieresRes = await axios.get('/v1/matieres');
+            console.log('Matières rafraîchies:', matieresRes.data);
             setMatieres(matieresRes.data || []);
-        } catch (error) {
-            console.error("Erreur lors de l'ajout de la matière:", error);
+
+            alert('Matière créée avec succès!');
+
+        } catch (error: any) {
+            console.error('=== ERREUR lors de l\'ajout de la matière ===');
+            console.error('Erreur complète:', error);
+            console.error('Message d\'erreur:', error.message);
+            console.error('Réponse d\'erreur:', error.response?.data);
+            console.error('Status d\'erreur:', error.response?.status);
+            console.error('Headers d\'erreur:', error.response?.headers);
+
+            const errorMessage = error.response?.data?.message || error.message || 'Erreur inconnue';
+            alert('Erreur lors de la création de la matière: ' + errorMessage);
         }
     };
 
@@ -661,12 +748,34 @@ function ModulesManagementPage() {
                     <div className="bg-white rounded-xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto animate-scaleIn">
                         <div className="flex items-center justify-between mb-6">
                             <h3 className="text-2xl font-bold text-gray-900">Ajouter une matière</h3>
-                            <button
-                                onClick={() => setShowAddModal(false)}
-                                className="text-gray-400 hover:text-gray-600 transition-colors p-2 hover:bg-gray-100 rounded-lg"
-                            >
-                                <X className="w-5 h-5" />
-                            </button>
+                            <div className="flex items-center space-x-2">
+                                <button
+                                    type="button"
+                                    onClick={async () => {
+                                        try {
+                                            const [semestresRes, modulesRes] = await Promise.all([
+                                                axios.get('/v1/semestres'),
+                                                axios.get('/v1/modules')
+                                            ]);
+                                            setSemestres(semestresRes.data || []);
+                                            setModules(modulesRes.data || []);
+                                            console.log('Données rafraîchies');
+                                        } catch (error) {
+                                            console.error('Erreur lors du rafraîchissement:', error);
+                                        }
+                                    }}
+                                    className="text-blue-600 hover:text-blue-800 transition-colors p-2 hover:bg-blue-50 rounded-lg"
+                                    title="Rafraîchir les données"
+                                >
+                                    <RefreshCw className="w-5 h-5" />
+                                </button>
+                                <button
+                                    onClick={() => setShowAddModal(false)}
+                                    className="text-gray-400 hover:text-gray-600 transition-colors p-2 hover:bg-gray-100 rounded-lg"
+                                >
+                                    <X className="w-5 h-5" />
+                                </button>
+                            </div>
                         </div>
 
                         <form onSubmit={(e) => {
@@ -684,6 +793,34 @@ function ModulesManagementPage() {
                                     placeholder="Entrez le nom de la matière"
                                     value={newMatiere.nom}
                                     onChange={(e) => setNewMatiere({ ...newMatiere, nom: e.target.value })}
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Code de la matière <span className="text-red-500">*</span>
+                                </label>
+                                <input
+                                    type="text"
+                                    required
+                                    className="input-gradient w-full px-4 py-3"
+                                    placeholder="Entrez le code de la matière (ex: INFO101)"
+                                    value={newMatiere.code}
+                                    onChange={(e) => setNewMatiere({ ...newMatiere, code: e.target.value })}
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Description <span className="text-red-500">*</span>
+                                </label>
+                                <textarea
+                                    required
+                                    className="input-gradient w-full px-4 py-3"
+                                    placeholder="Entrez la description de la matière"
+                                    rows={3}
+                                    value={newMatiere.description}
+                                    onChange={(e) => setNewMatiere({ ...newMatiere, description: e.target.value })}
                                 />
                             </div>
 
@@ -719,6 +856,20 @@ function ModulesManagementPage() {
                                         <option key={s.id} value={s.id}>{s.nom}</option>
                                     ))}
                                 </select>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Crédits
+                                </label>
+                                <input
+                                    type="number"
+                                    min="1"
+                                    className="input-gradient w-full px-4 py-3"
+                                    placeholder="Nombre de crédits"
+                                    value={newMatiere.credits}
+                                    onChange={(e) => setNewMatiere({ ...newMatiere, credits: parseInt(e.target.value) || 1 })}
+                                />
                             </div>
 
                             <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
