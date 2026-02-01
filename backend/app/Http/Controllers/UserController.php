@@ -13,10 +13,144 @@ class UserController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
         // $this->authorize('viewAny', User::class);
-        return User::with('roles')->get();
+        
+        \Log::info('=== DÉBUT RÉCUPÉRATION UTILISATEURS ===', [
+            'request_path' => $request->path(),
+            'request_method' => $request->method(),
+            'request_url' => $request->fullUrl(),
+            'request_ip' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+            'user_authenticated' => auth()->check(),
+            'user_id' => auth()->id(),
+            'timestamp' => now()->toDateTimeString()
+        ]);
+        
+        try {
+            $query = User::with('roles');
+            \Log::info('Query créée avec succès', ['query_sql' => $query->toSql()]);
+            
+            // Filtrer les utilisateurs actifs
+            $query->where('status', true);
+            \Log::info('Filtre status appliqué');
+            
+            // Exclure l'utilisateur actuel des suggestions
+            if (auth()->check()) {
+                $query->where('id', '!=', auth()->id());
+                \Log::info('Utilisateur actuel exclu des suggestions', ['user_id' => auth()->id()]);
+            } else {
+                \Log::warning('Aucun utilisateur authentifié trouvé - tous les utilisateurs seront inclus');
+            }
+            
+            \Log::info('Exécution de la requête...');
+            $usersCollection = $query->get();
+            \Log::info('Utilisateurs récupérés depuis la base', [
+                'count' => $usersCollection->count(),
+                'memory_usage' => memory_get_usage(true),
+                'execution_time' => microtime(true) - LARAVEL_START
+            ]);
+            
+            // Vérifier si nous avons des utilisateurs
+            if ($usersCollection->isEmpty()) {
+                \Log::warning('Aucun utilisateur trouvé dans la base de données');
+                return response()->json([]);
+            }
+            
+            // Transformer les données pour correspondre au frontend
+            \Log::info('Début transformation des données utilisateurs...');
+            $users = $usersCollection->map(function ($user) {
+                try {
+                    $transformedUser = [
+                        'id' => $user->id,
+                        'first_name' => $user->first_name,
+                        'last_name' => $user->last_name,
+                        'username' => $user->username,
+                        'email' => $user->email,
+                        'phone' => $user->phone,
+                        'address' => $user->address,
+                        'city' => $user->city,
+                        'country' => $user->country,
+                        'postal_code' => $user->postal_code,
+                        'about' => $user->about,
+                        'avatar' => $user->avatar,
+                        'status' => $user->status,
+                        'last_login_at' => $user->last_login_at,
+                        'last_login_ip' => $user->last_login_ip,
+                        'email_verified_at' => $user->email_verified_at,
+                        'created_at' => $user->created_at,
+                        'updated_at' => $user->updated_at,
+                        'role' => $user->roles->first()?->name ?? 'etudiant', // Prend le premier rôle ou 'etudiant' par défaut
+                        'is_online' => $user->last_login_at ? $user->last_login_at->gt(now()->subMinutes(5)) : false,
+                    ];
+                    
+                    \Log::info('Utilisateur transformé', [
+                        'user_id' => $user->id,
+                        'first_name' => $transformedUser['first_name'],
+                        'last_name' => $transformedUser['last_name'],
+                        'role' => $transformedUser['role'],
+                        'has_roles' => !empty($user->roles),
+                        'roles_count' => $user->roles->count()
+                    ]);
+                    
+                    return $transformedUser;
+                } catch (\Exception $e) {
+                    \Log::error('Erreur lors de la transformation d\'un utilisateur', [
+                        'user_id' => $user->id,
+                        'error' => $e->getMessage(),
+                        'file' => $e->getFile(),
+                        'line' => $e->getLine()
+                    ]);
+                    return null;
+                }
+            })->filter(); // Supprimer les null
+            
+            \Log::info('Transformation des utilisateurs terminée', [
+                'final_count' => $users->count(),
+                'sample_user' => $users->first(),
+                'memory_usage' => memory_get_usage(true)
+            ]);
+            
+            \Log::info('=== RÉCUPÉRATION UTILISATEURS RÉUSSIE ===');
+            return response()->json($users);
+            
+        } catch (\Illuminate\Database\QueryException $e) {
+            \Log::error('ERREUR DE BASE DE DONNÉES lors de la récupération des utilisateurs', [
+                'error' => $e->getMessage(),
+                'sql' => $e->getSql(),
+                'bindings' => $e->getBindings(),
+                'code' => $e->getCode(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'error' => 'Erreur de base de données',
+                'message' => config('app.debug') ? $e->getMessage() : 'Impossible de récupérer les utilisateurs'
+            ], 500);
+            
+        } catch (\Exception $e) {
+            \Log::error('ERREUR GÉNÉRALE lors de la récupération des utilisateurs', [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'code' => $e->getCode(),
+                'trace' => $e->getTraceAsString(),
+                'memory_usage' => memory_get_usage(true),
+                'timestamp' => now()->toDateTimeString()
+            ]);
+            
+            return response()->json([
+                'error' => 'Erreur lors de la récupération des utilisateurs',
+                'message' => config('app.debug') ? $e->getMessage() : 'Erreur technique',
+                'debug_info' => config('app.debug') ? [
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine()
+                ] : null
+            ], 500);
+        }
     }
 
     /**

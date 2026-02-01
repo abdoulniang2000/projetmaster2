@@ -100,8 +100,10 @@ function UsersManagementPage() {
                 ]);
                 setUsers(usersRes.data || []);
                 setRoles(rolesRes.data || []);
-            } catch (error) {
+                success('Données chargées avec succès');
+            } catch (error: any) {
                 console.error('Erreur lors du chargement des données:', error);
+                error('Impossible de charger les utilisateurs. Veuillez réessayer.');
                 setUsers([]);
                 setRoles([]);
             } finally {
@@ -127,8 +129,10 @@ function UsersManagementPage() {
             // Rafraîchir la liste des utilisateurs
             const usersRes = await axios.get('/v1/users');
             setUsers(usersRes.data || []);
-        } catch (error) {
+            success('Rôle modifié avec succès');
+        } catch (error: any) {
             console.error('Erreur lors de la modification du rôle:', error);
+            error('Impossible de modifier le rôle. Veuillez réessayer.');
         }
     };
 
@@ -138,8 +142,10 @@ function UsersManagementPage() {
             // Rafraîchir la liste des utilisateurs
             const usersRes = await axios.get('/v1/users');
             setUsers(usersRes.data || []);
-        } catch (error) {
+            success(`Utilisateur ${isActive ? 'activé' : 'désactivé'} avec succès`);
+        } catch (error: any) {
             console.error('Erreur lors de la modification du statut:', error);
+            error('Impossible de modifier le statut. Veuillez réessayer.');
         }
     };
 

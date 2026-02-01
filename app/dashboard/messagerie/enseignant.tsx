@@ -17,7 +17,13 @@ import {
     Send,
     Paperclip,
     Smile,
-    X
+    UserCheck,
+    Settings,
+    BarChart3,
+    Download,
+    Eye,
+    Archive,
+    Trash2
 } from 'lucide-react';
 import axios from 'axios';
 
@@ -59,7 +65,7 @@ interface Message {
     tags?: any[];
 }
 
-function MessageriePage() {
+function TeacherMessageriePage() {
     const [conversations, setConversations] = useState<Conversation[]>([]);
     const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
     const [messages, setMessages] = useState<Message[]>([]);
@@ -68,23 +74,26 @@ function MessageriePage() {
     const [filterType, setFilterType] = useState('tous');
     const [newMessage, setNewMessage] = useState('');
     const [showNewConversationModal, setShowNewConversationModal] = useState(false);
-    const [viewMode, setViewMode] = useState<'liste' | 'cours'>('liste');
+    const [viewMode, setViewMode] = useState<'liste' | 'cours' | 'matiere'>('liste');
     const [availableUsers, setAvailableUsers] = useState<any[]>([]);
     const [availableCourses, setAvailableCourses] = useState<any[]>([]);
     const [newConversation, setNewConversation] = useState({
         titre: '',
         description: '',
-        type: 'prive' as 'prive' | 'groupe' | 'matiere',
+        type: 'matiere' as 'prive' | 'groupe' | 'matiere',
         cours_id: '',
         participants: [] as number[]
     });
-    const [availableTags, setAvailableTags] = useState<{ [key: string]: string }>({});
+    const [availableTags, setAvailableTags] = useState<{[key: string]: string}>({});
+    const [showStats, setShowStats] = useState(false);
+    const [conversationStats, setConversationStats] = useState<any>({});
 
     useEffect(() => {
         fetchConversations();
         fetchAvailableUsers();
         fetchAvailableCourses();
         fetchAvailableTags();
+        fetchStats();
     }, []);
 
     useEffect(() => {
@@ -93,10 +102,27 @@ function MessageriePage() {
         }
     }, [selectedConversation]);
 
+    const fetchStats = async () => {
+        try {
+            // Simuler des statistiques pour l'enseignant
+            const stats = {
+                totalConversations: conversations.length,
+                messagesAujourdHui: 12,
+                etudiantsActifs: 45,
+                matieresActives: 8
+            };
+            setConversationStats(stats);
+        } catch (error) {
+            console.error('Erreur lors de la récupération des statistiques:', error);
+        }
+    };
+
     const fetchAvailableUsers = async () => {
         try {
             const response = await axios.get('/v1/users');
-            setAvailableUsers(response.data);
+            // Filtrer pour n'afficher que les étudiants
+            const students = response.data.filter((user: any) => user.role === 'etudiant');
+            setAvailableUsers(students);
         } catch (error) {
             console.error('Erreur lors de la récupération des utilisateurs:', error);
         }
@@ -144,9 +170,8 @@ function MessageriePage() {
         if (!newMessage.trim() || !selectedConversation) return;
 
         try {
-            // Extraire les tags du message
             const tags = newMessage.match(/#\w+/g) || [];
-
+            
             const response = await axios.post(`/v1/conversations/${selectedConversation.id}/messages`, {
                 contenu: newMessage,
                 type: 'texte',
@@ -156,7 +181,6 @@ function MessageriePage() {
             setMessages([...messages, response.data]);
             setNewMessage('');
 
-            // Mettre à jour la conversation
             const updatedConversations = conversations.map(conv =>
                 conv.id === selectedConversation.id
                     ? { ...conv, dernier_message_contenu: newMessage, dernier_message_date: new Date().toISOString() }
@@ -168,21 +192,6 @@ function MessageriePage() {
         }
     };
 
-    const markAsRead = async (conversationId: number) => {
-        try {
-            await axios.put(`/v1/conversations/${conversationId}/mark-read`);
-
-            const updatedConversations = conversations.map(conv =>
-                conv.id === conversationId
-                    ? { ...conv, nombre_messages_non_lus: 0 }
-                    : conv
-            );
-            setConversations(updatedConversations);
-        } catch (error) {
-            console.error('Erreur lors du marquage comme lu:', error);
-        }
-    };
-
     const createNewConversation = async () => {
         try {
             const response = await axios.post('/v1/conversations', newConversation);
@@ -191,7 +200,7 @@ function MessageriePage() {
             setNewConversation({
                 titre: '',
                 description: '',
-                type: 'prive',
+                type: 'matiere',
                 cours_id: '',
                 participants: []
             });
@@ -205,12 +214,14 @@ function MessageriePage() {
         setNewMessage(prev => prev + (prev ? ' ' : '') + tag);
     };
 
-    const filteredConversations = conversations.filter(conv => {
-        const matchesSearch = conv.titre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            conv.description?.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesType = filterType === 'tous' || conv.type === filterType;
-        return matchesSearch && matchesType;
-    });
+    const archiveConversation = async (conversationId: number) => {
+        try {
+            await axios.put(`/v1/conversations/${conversationId}/archive`);
+            setConversations(conversations.filter(conv => conv.id !== conversationId));
+        } catch (error) {
+            console.error('Erreur lors de l\'archivage:', error);
+        }
+    };
 
     const getTypeIcon = (type: string) => {
         switch (type) {
@@ -232,15 +243,25 @@ function MessageriePage() {
 
     return (
         <div className="h-full flex flex-col animate-fadeInUp">
-            {/* En-tête */}
+            {/* En-tête enseignant */}
             <div className="border-b border-gray-200/50 p-6">
                 <div className="flex items-center justify-between mb-6">
-                    <h1 className="text-3xl font-bold">
-                        <GradientText from="orange" to="blue">
-                            Messagerie Interne
-                        </GradientText>
-                    </h1>
+                    <div>
+                        <h1 className="text-3xl font-bold">
+                            <GradientText from="blue" to="green">
+                                Messagerie Enseignant
+                            </GradientText>
+                        </h1>
+                        <p className="text-gray-600 mt-2">Gérez vos communications avec les étudiants</p>
+                    </div>
                     <div className="flex items-center space-x-4">
+                        <Button
+                            variant="outline"
+                            onClick={() => setShowStats(!showStats)}
+                        >
+                            <BarChart3 className="w-4 h-4 mr-2" />
+                            Statistiques
+                        </Button>
                         <Button
                             variant={viewMode === 'liste' ? 'blue' : 'outline'}
                             onClick={() => setViewMode('liste')}
@@ -253,14 +274,64 @@ function MessageriePage() {
                             onClick={() => setViewMode('cours')}
                         >
                             <BookOpen className="w-4 h-4 mr-2" />
-                            Par matière
+                            Par cours
                         </Button>
-                        <Button variant="orange" onClick={() => setShowNewConversationModal(true)}>
+                        <Button variant="blue" onClick={() => setShowNewConversationModal(true)}>
                             <Plus className="w-4 h-4 mr-2" />
-                            Nouvelle conversation
+                            Créer une conversation
                         </Button>
                     </div>
                 </div>
+
+                {/* Statistiques */}
+                {showStats && (
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                        <Card className="card-gradient">
+                            <CardContent className="p-4">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-sm font-medium text-gray-600">Total conversations</p>
+                                        <p className="text-2xl font-bold text-blue-600">{conversationStats.totalConversations || 0}</p>
+                                    </div>
+                                    <MessageSquare className="w-8 h-8 text-blue-600" />
+                                </div>
+                            </CardContent>
+                        </Card>
+                        <Card className="card-gradient">
+                            <CardContent className="p-4">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-sm font-medium text-gray-600">Messages aujourd'hui</p>
+                                        <p className="text-2xl font-bold text-green-600">{conversationStats.messagesAujourdHui || 0}</p>
+                                    </div>
+                                    <Send className="w-8 h-8 text-green-600" />
+                                </div>
+                            </CardContent>
+                        </Card>
+                        <Card className="card-gradient">
+                            <CardContent className="p-4">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-sm font-medium text-gray-600">Étudiants actifs</p>
+                                        <p className="text-2xl font-bold text-purple-600">{conversationStats.etudiantsActifs || 0}</p>
+                                    </div>
+                                    <UserCheck className="w-8 h-8 text-purple-600" />
+                                </div>
+                            </CardContent>
+                        </Card>
+                        <Card className="card-gradient">
+                            <CardContent className="p-4">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-sm font-medium text-gray-600">Matières actives</p>
+                                        <p className="text-2xl font-bold text-orange-600">{conversationStats.matieresActives || 0}</p>
+                                    </div>
+                                    <BookOpen className="w-8 h-8 text-orange-600" />
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
+                )}
 
                 {/* Barre de recherche et filtres */}
                 <div className="flex items-center space-x-4">
@@ -287,7 +358,7 @@ function MessageriePage() {
                 </div>
             </div>
 
-            {/* Contenu principal */}
+            {/* Contenu principal - même structure que la page de messagerie principale */}
             <div className="flex-1 flex overflow-hidden">
                 {/* Liste des conversations */}
                 <div className="w-1/3 border-r border-gray-200/50 overflow-y-auto">
@@ -297,15 +368,12 @@ function MessageriePage() {
                         </div>
                     ) : (
                         <div className="divide-y divide-gray-200/50">
-                            {filteredConversations.map((conversation) => (
+                            {conversations.map((conversation) => (
                                 <div
                                     key={conversation.id}
                                     className={`p-4 hover:bg-gray-50 cursor-pointer transition-colors ${selectedConversation?.id === conversation.id ? 'bg-blue-50' : ''
                                         }`}
-                                    onClick={() => {
-                                        setSelectedConversation(conversation);
-                                        markAsRead(conversation.id);
-                                    }}
+                                    onClick={() => setSelectedConversation(conversation)}
                                 >
                                     <div className="flex items-start justify-between mb-2">
                                         <div className="flex items-center space-x-2">
@@ -314,11 +382,19 @@ function MessageriePage() {
                                                 {conversation.type}
                                             </span>
                                         </div>
-                                        {conversation.nombre_messages_non_lus > 0 && (
-                                            <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full">
-                                                {conversation.nombre_messages_non_lus}
-                                            </span>
-                                        )}
+                                        <div className="flex items-center space-x-2">
+                                            {conversation.nombre_messages_non_lus > 0 && (
+                                                <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full">
+                                                    {conversation.nombre_messages_non_lus}
+                                                </span>
+                                            )}
+                                            <Button variant="ghost" size="sm" onClick={(e) => {
+                                                e.stopPropagation();
+                                                archiveConversation(conversation.id);
+                                            }}>
+                                                <Archive className="w-4 h-4" />
+                                            </Button>
+                                        </div>
                                     </div>
                                     <h3 className="font-semibold text-gray-900 mb-1">{conversation.titre}</h3>
                                     {conversation.dernier_message_contenu && (
@@ -342,11 +418,10 @@ function MessageriePage() {
                     )}
                 </div>
 
-                {/* Zone de conversation */}
+                {/* Zone de conversation - même code que la page principale */}
                 <div className="flex-1 flex flex-col">
                     {selectedConversation ? (
                         <>
-                            {/* En-tête de la conversation */}
                             <div className="border-b border-gray-200/50 p-4">
                                 <div className="flex items-center justify-between">
                                     <div>
@@ -363,14 +438,13 @@ function MessageriePage() {
                                             Filtrer
                                         </Button>
                                         <Button variant="outline" size="sm">
-                                            <Bell className="w-4 h-4 mr-2" />
-                                            Notifications
+                                            <Settings className="w-4 h-4 mr-2" />
+                                            Gérer
                                         </Button>
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Messages */}
                             <div className="flex-1 overflow-y-auto p-4 space-y-4">
                                 {messages.map((message) => (
                                     <div
@@ -378,8 +452,8 @@ function MessageriePage() {
                                         className={`flex ${message.expediteur_id === 1 ? 'justify-end' : 'justify-start'}`}
                                     >
                                         <div className={`max-w-xs lg:max-w-md ${message.expediteur_id === 1
-                                            ? 'bg-blue-500 text-white'
-                                            : 'bg-gray-100 text-gray-900'
+                                                ? 'bg-blue-500 text-white'
+                                                : 'bg-gray-100 text-gray-900'
                                             } rounded-lg p-3`}>
                                             <div className="flex items-center justify-between mb-1">
                                                 <span className="text-xs font-semibold">
@@ -408,9 +482,7 @@ function MessageriePage() {
                                 ))}
                             </div>
 
-                            {/* Zone de saisie */}
                             <div className="border-t border-gray-200/50 p-4">
-                                {/* Tags rapides */}
                                 {Object.keys(availableTags).length > 0 && (
                                     <div className="mb-3 flex items-center space-x-2">
                                         <span className="text-sm text-gray-600">Tags rapides:</span>
@@ -465,7 +537,7 @@ function MessageriePage() {
                 </div>
             </div>
 
-            {/* Modal Nouvelle Conversation */}
+            {/* Modal Nouvelle Conversation - même code que la page principale */}
             {showNewConversationModal && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto animate-scaleIn">
@@ -475,7 +547,7 @@ function MessageriePage() {
                                 onClick={() => setShowNewConversationModal(false)}
                                 className="text-gray-400 hover:text-gray-600 transition-colors p-2 hover:bg-gray-100 rounded-lg"
                             >
-                                <X className="w-5 h-5" />
+                                <Trash2 className="w-5 h-5" />
                             </button>
                         </div>
 
@@ -487,7 +559,7 @@ function MessageriePage() {
                                 <select
                                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                                     value={newConversation.type}
-                                    onChange={(e) => setNewConversation({ ...newConversation, type: e.target.value as any })}
+                                    onChange={(e) => setNewConversation({...newConversation, type: e.target.value as any})}
                                 >
                                     <option value="prive">Privée</option>
                                     <option value="groupe">Groupe</option>
@@ -505,7 +577,7 @@ function MessageriePage() {
                                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                                     placeholder="Entrez le titre de la conversation"
                                     value={newConversation.titre}
-                                    onChange={(e) => setNewConversation({ ...newConversation, titre: e.target.value })}
+                                    onChange={(e) => setNewConversation({...newConversation, titre: e.target.value})}
                                 />
                             </div>
 
@@ -518,7 +590,7 @@ function MessageriePage() {
                                     placeholder="Entrez la description de la conversation"
                                     rows={3}
                                     value={newConversation.description}
-                                    onChange={(e) => setNewConversation({ ...newConversation, description: e.target.value })}
+                                    onChange={(e) => setNewConversation({...newConversation, description: e.target.value})}
                                 />
                             </div>
 
@@ -530,7 +602,7 @@ function MessageriePage() {
                                     <select
                                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                                         value={newConversation.cours_id}
-                                        onChange={(e) => setNewConversation({ ...newConversation, cours_id: e.target.value })}
+                                        onChange={(e) => setNewConversation({...newConversation, cours_id: e.target.value})}
                                     >
                                         <option value="">Sélectionner une matière</option>
                                         {availableCourses.map((course: any) => (
@@ -598,4 +670,4 @@ function MessageriePage() {
     );
 }
 
-export default withAuth(MessageriePage);
+export default withAuth(TeacherMessageriePage);

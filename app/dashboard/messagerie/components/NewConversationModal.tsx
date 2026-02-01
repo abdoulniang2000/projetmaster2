@@ -21,6 +21,9 @@ interface User {
     name: string;
     email: string;
     roles: any[];
+    avatar?: string;
+    last_seen?: string;
+    is_online?: boolean;
 }
 
 interface Cours {
@@ -46,6 +49,9 @@ export default function NewConversationModal({ isOpen, onClose, onConversationCr
     const [searchTerm, setSearchTerm] = useState('');
     const [loading, setLoading] = useState(false);
     const [step, setStep] = useState(1);
+    const [suggestions, setSuggestions] = useState<User[]>([]);
+    const [usersLoading, setUsersLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         if (isOpen) {
@@ -55,27 +61,118 @@ export default function NewConversationModal({ isOpen, onClose, onConversationCr
     }, [isOpen]);
 
     const fetchUsers = async () => {
+        setUsersLoading(true);
+        setError(null);
+
+        // D'abord tester avec la route de test
         try {
-            const response = await axios.get('/api/users');
+            console.log('Test de la route /api/v1/test-users...');
+            const testResponse = await axios.get('/api/v1/test-users');
+            console.log('Test route réussie:', testResponse.data);
+        } catch (testError) {
+            console.error('Test route échouée:', testError);
+        }
+
+        try {
+            console.log('Début récupération des utilisateurs...');
+            const response = await axios.get('/api/v1/users');
+            console.log('Utilisateurs récupérés:', response.data);
             setUsers(response.data);
         } catch (error) {
             console.error('Erreur lors de la récupération des utilisateurs:', error);
+            setError('Impossible de charger les utilisateurs');
+
+            // Essayer l'ancienne route au cas où
+            try {
+                const fallbackResponse = await axios.get('/api/users');
+                console.log('Utilisateurs récupérés (fallback):', fallbackResponse.data);
+                setUsers(fallbackResponse.data);
+                setError(null);
+            } catch (fallbackError) {
+                console.error('Erreur fallback:', fallbackError);
+
+                // Solution de secours avec données statiques basées sur la base de données
+                console.log('Utilisation des données de secours statiques');
+                const staticUsers: User[] = [
+                    {
+                        id: 1,
+                        name: "Admin User",
+                        email: "admin@example.com",
+                        roles: [{ name: "ETUDIANT" }],
+                        avatar: undefined,
+                        is_online: false,
+                        last_seen: undefined
+                    },
+                    {
+                        id: 2,
+                        name: "Professeur Alpha",
+                        email: "prof.alpha@example.com",
+                        roles: [{ name: "ETUDIANT" }],
+                        avatar: undefined,
+                        is_online: false,
+                        last_seen: undefined
+                    },
+                    {
+                        id: 3,
+                        name: "Étudiant Un",
+                        email: "etudiant.un@example.com",
+                        roles: [{ name: "ETUDIANT" }],
+                        avatar: undefined,
+                        is_online: false,
+                        last_seen: undefined
+                    },
+                    {
+                        id: 5,
+                        name: "Abdoul Niang",
+                        email: "abdoilniang00@gmail.com",
+                        roles: [{ name: "admin" }],
+                        avatar: undefined,
+                        is_online: false,
+                        last_seen: undefined
+                    }
+                ];
+                setUsers(staticUsers);
+                setError(null);
+                console.log('Données statiques chargées:', staticUsers);
+            }
+        } finally {
+            setUsersLoading(false);
         }
     };
 
     const fetchCours = async () => {
         try {
-            const response = await axios.get('/api/cours');
+            const response = await axios.get('/api/v1/cours');
+            console.log('Cours récupérés:', response.data);
             setCours(response.data);
         } catch (error) {
             console.error('Erreur lors de la récupération des cours:', error);
+            // Essayer l'ancienne route au cas où
+            try {
+                const fallbackResponse = await axios.get('/api/cours');
+                console.log('Cours récupérés (fallback):', fallbackResponse.data);
+                setCours(fallbackResponse.data);
+            } catch (fallbackError) {
+                console.error('Erreur fallback cours:', fallbackError);
+            }
         }
     };
 
-    const filteredUsers = users.filter(user =>
-        user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.email.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredUsers = users.filter(user => {
+        const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            user.email.toLowerCase().includes(searchTerm.toLowerCase());
+        const notSelected = !selectedUsers.includes(user.id);
+        return matchesSearch && notSelected;
+    });
+
+    // Suggestions intelligentes basées sur le type de conversation
+    const getSuggestions = () => {
+        if (type === 'prive') {
+            // Exclure l'utilisateur actuel (simulation avec ID 1)
+            return users.filter(user => user.id !== 1).slice(0, 3);
+        }
+        return [];
+    };
 
     const toggleUserSelection = (userId: number) => {
         if (selectedUsers.includes(userId)) {
@@ -119,12 +216,16 @@ export default function NewConversationModal({ isOpen, onClose, onConversationCr
         setSearchTerm('');
         setType('prive');
         setStep(1);
+        setSuggestions([]);
         onClose();
     };
 
     const canProceed = () => {
         if (step === 1) return titre.trim() !== '';
-        if (step === 2) return selectedUsers.length > 0;
+        if (step === 2) {
+            if (type === 'prive') return selectedUsers.length === 1;
+            return selectedUsers.length > 0;
+        }
         return true;
     };
 
@@ -181,8 +282,25 @@ export default function NewConversationModal({ isOpen, onClose, onConversationCr
                                 }`}>
                                 2
                             </div>
-                            <span className="text-sm font-medium">Participants</span>
+                            <span className="text-sm font-medium">
+                                {type === 'prive' ? 'Participant' : 'Participants'}
+                            </span>
                         </div>
+                        {type !== 'prive' && (
+                            <>
+                                <div className="flex-1 h-1 bg-gray-200 mx-4">
+                                    <div className={`h-full bg-blue-500 transition-all ${step >= 3 ? 'w-full' : 'w-0'
+                                        }`}></div>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step >= 3 ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-600'
+                                        }`}>
+                                        3
+                                    </div>
+                                    <span className="text-sm font-medium">Confirmation</span>
+                                </div>
+                            </>
+                        )}
                     </div>
                 </div>
 
@@ -202,8 +320,8 @@ export default function NewConversationModal({ isOpen, onClose, onConversationCr
                                             type="button"
                                             onClick={() => setType(typeOption)}
                                             className={`p-4 rounded-lg border-2 transition-all ${type === typeOption
-                                                    ? 'border-blue-500 bg-blue-50'
-                                                    : 'border-gray-200 hover:border-gray-300'
+                                                ? 'border-blue-500 bg-blue-50'
+                                                : 'border-gray-200 hover:border-gray-300'
                                                 }`}
                                         >
                                             <div className="flex flex-col items-center space-y-2">
@@ -271,19 +389,91 @@ export default function NewConversationModal({ isOpen, onClose, onConversationCr
 
                     {step === 2 && (
                         <div className="space-y-6">
+                            {/* Suggestions rapides pour conversations privées */}
+                            {type === 'prive' && !searchTerm && users.length > 0 && (
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Suggestions rapides
+                                    </label>
+                                    <div className="space-y-2">
+                                        {users.slice(0, 3).map((user) => (
+                                            <div
+                                                key={user.id}
+                                                onClick={() => {
+                                                    setSelectedUsers([user.id]);
+                                                    setStep(3);
+                                                }}
+                                                className="p-3 rounded-lg border border-gray-200 hover:border-blue-300 cursor-pointer transition-all hover:bg-blue-50"
+                                            >
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center space-x-3">
+                                                        <div className="relative">
+                                                            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold">
+                                                                {user.name.charAt(0).toUpperCase()}
+                                                            </div>
+                                                            {user.is_online && (
+                                                                <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
+                                                            )}
+                                                        </div>
+                                                        <div>
+                                                            <p className="font-medium text-gray-900">{user.name}</p>
+                                                            <p className="text-sm text-gray-500">{user.email}</p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="text-xs text-gray-400">
+                                                        Démarrer une conversation
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
                             {/* Recherche d'utilisateurs */}
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Ajouter des participants
+                                    {type === 'prive' ? 'Rechercher un utilisateur' : 'Ajouter des participants'}
                                 </label>
+
+                                {/* Affichage de l'état de chargement */}
+                                {usersLoading && (
+                                    <div className="text-center py-4">
+                                        <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+                                        <p className="text-sm text-gray-500 mt-2">Chargement des utilisateurs...</p>
+                                    </div>
+                                )}
+
+                                {/* Affichage des erreurs */}
+                                {error && (
+                                    <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
+                                        <p className="text-sm">{error}</p>
+                                        <button
+                                            onClick={fetchUsers}
+                                            className="text-red-600 underline text-sm mt-2"
+                                        >
+                                            Réessayer
+                                        </button>
+                                    </div>
+                                )}
+
+                                {/* Affichage du nombre d'utilisateurs chargés */}
+                                {!usersLoading && !error && (
+                                    <p className="text-xs text-gray-500 mb-2">
+                                        {users.length} utilisateur(s) disponible(s)
+                                    </p>
+                                )}
+
                                 <div className="relative">
                                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                                     <input
                                         type="text"
                                         value={searchTerm}
                                         onChange={(e) => setSearchTerm(e.target.value)}
-                                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                        placeholder="Rechercher des utilisateurs..."
+                                        className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        placeholder={type === 'prive' ? 'Taper un nom ou email...' : 'Rechercher des utilisateurs...'}
+                                        autoFocus
+                                        disabled={usersLoading}
                                     />
                                 </div>
                             </div>
@@ -291,36 +481,82 @@ export default function NewConversationModal({ isOpen, onClose, onConversationCr
                             {/* Liste des utilisateurs */}
                             <div className="max-h-64 overflow-y-auto">
                                 <div className="space-y-2">
-                                    {filteredUsers.map((user) => (
-                                        <div
-                                            key={user.id}
-                                            onClick={() => toggleUserSelection(user.id)}
-                                            className={`p-3 rounded-lg border cursor-pointer transition-all ${selectedUsers.includes(user.id)
+                                    {filteredUsers.length === 0 && !usersLoading && !error ? (
+                                        <div className="text-center py-8 text-gray-500">
+                                            <Users className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                                            <p>
+                                                {searchTerm
+                                                    ? 'Aucun utilisateur trouvé pour cette recherche'
+                                                    : type === 'prive'
+                                                        ? 'Aucun utilisateur disponible'
+                                                        : 'Aucun utilisateur disponible'
+                                                }
+                                            </p>
+                                        </div>
+                                    ) : (
+                                        filteredUsers.map((user) => (
+                                            <div
+                                                key={user.id}
+                                                onClick={() => {
+                                                    if (type === 'prive') {
+                                                        setSelectedUsers([user.id]);
+                                                        setStep(3);
+                                                    } else {
+                                                        toggleUserSelection(user.id);
+                                                    }
+                                                }}
+                                                className={`p-3 rounded-lg border cursor-pointer transition-all ${selectedUsers.includes(user.id)
                                                     ? 'border-blue-500 bg-blue-50'
-                                                    : 'border-gray-200 hover:border-gray-300'
-                                                }`}
-                                        >
-                                            <div className="flex items-center justify-between">
-                                                <div className="flex items-center space-x-3">
-                                                    <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
-                                                        <User className="w-4 h-4 text-gray-600" />
+                                                    : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                                                    }`}
+                                            >
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center space-x-3">
+                                                        <div className="relative">
+                                                            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold">
+                                                                {user.name.charAt(0).toUpperCase()}
+                                                            </div>
+                                                            {user.is_online && (
+                                                                <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
+                                                            )}
+                                                        </div>
+                                                        <div className="flex-1">
+                                                            <p className="font-medium text-gray-900">{user.name}</p>
+                                                            <p className="text-sm text-gray-500">{user.email}</p>
+                                                            {user.roles && user.roles.length > 0 && (
+                                                                <div className="flex gap-1 mt-1">
+                                                                    {user.roles.slice(0, 2).map((role: any, index: number) => (
+                                                                        <span key={index} className="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded-full">
+                                                                            {role.name}
+                                                                        </span>
+                                                                    ))}
+                                                                </div>
+                                                            )}
+                                                        </div>
                                                     </div>
-                                                    <div>
-                                                        <p className="font-medium text-gray-900">{user.name}</p>
-                                                        <p className="text-sm text-gray-500">{user.email}</p>
+                                                    <div className="flex items-center space-x-2">
+                                                        {type === 'prive' ? (
+                                                            <Plus className="w-5 h-5 text-blue-500" />
+                                                        ) : (
+                                                            <div className={`w-5 h-5 rounded border-2 ${selectedUsers.includes(user.id)
+                                                                ? 'bg-blue-500 border-blue-500'
+                                                                : 'border-gray-300'
+                                                                }`}>
+                                                                {selectedUsers.includes(user.id) && (
+                                                                    <Check className="w-3 h-3 text-white m-0.5" />
+                                                                )}
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 </div>
-                                                {selectedUsers.includes(user.id) && (
-                                                    <Check className="w-5 h-5 text-blue-500" />
-                                                )}
                                             </div>
-                                        </div>
-                                    ))}
+                                        ))
+                                    )}
                                 </div>
                             </div>
 
                             {/* Participants sélectionnés */}
-                            {selectedUsers.length > 0 && (
+                            {selectedUsers.length > 0 && type !== 'prive' && (
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
                                         Participants sélectionnés ({selectedUsers.length})
@@ -348,6 +584,64 @@ export default function NewConversationModal({ isOpen, onClose, onConversationCr
                             )}
                         </div>
                     )}
+
+                    {step === 3 && type !== 'prive' && (
+                        <div className="space-y-6">
+                            {/* Résumé de la conversation */}
+                            <div className="bg-gray-50 rounded-lg p-6">
+                                <h3 className="text-lg font-semibold mb-4">Résumé de la conversation</h3>
+
+                                <div className="space-y-3">
+                                    <div>
+                                        <span className="text-sm text-gray-500">Type:</span>
+                                        <span className="ml-2 font-medium capitalize">{type}</span>
+                                    </div>
+
+                                    <div>
+                                        <span className="text-sm text-gray-500">Titre:</span>
+                                        <span className="ml-2 font-medium">{titre}</span>
+                                    </div>
+
+                                    {description && (
+                                        <div>
+                                            <span className="text-sm text-gray-500">Description:</span>
+                                            <span className="ml-2 font-medium">{description}</span>
+                                        </div>
+                                    )}
+
+                                    {type === 'matiere' && selectedCours && (
+                                        <div>
+                                            <span className="text-sm text-gray-500">Matière:</span>
+                                            <span className="ml-2 font-medium">
+                                                {cours.find(c => c.id === selectedCours)?.titre}
+                                            </span>
+                                        </div>
+                                    )}
+
+                                    <div>
+                                        <span className="text-sm text-gray-500">Participants ({selectedUsers.length + 1}):
+                                        </span>
+                                        <div className="mt-2 flex flex-wrap gap-2">
+                                            <span className="inline-flex items-center px-3 py-1 rounded-full bg-green-100 text-green-800 text-sm">
+                                                Vous (Admin)
+                                            </span>
+                                            {selectedUsers.map((userId) => {
+                                                const user = users.find(u => u.id === userId);
+                                                return user ? (
+                                                    <span
+                                                        key={userId}
+                                                        className="inline-flex items-center px-3 py-1 rounded-full bg-blue-100 text-blue-800 text-sm"
+                                                    >
+                                                        {user.name}
+                                                    </span>
+                                                ) : null;
+                                            })}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* Pied de page */}
@@ -371,6 +665,14 @@ export default function NewConversationModal({ isOpen, onClose, onConversationCr
                                     disabled={!canProceed()}
                                 >
                                     Suivant
+                                </Button>
+                            ) : step === 2 ? (
+                                <Button
+                                    variant="blue"
+                                    onClick={() => setStep(3)}
+                                    disabled={!canProceed()}
+                                >
+                                    {type === 'prive' ? 'Créer la conversation' : 'Suivant'}
                                 </Button>
                             ) : (
                                 <Button

@@ -67,17 +67,132 @@ Route::prefix('v1')->group(function () {
     // User CRUD (temporairement non protégé pour le debug)
     Route::apiResource('users', \App\Http\Controllers\UserController::class);
     
+    // Route de test pour l'API users
+    Route::get('/test-users', function (Request $request) {
+        \Log::info('=== DÉBUT ROUTE TEST USERS ===', [
+            'request_path' => $request->path(),
+            'request_method' => $request->method(),
+            'request_ip' => $request->ip(),
+            'timestamp' => now()->toDateTimeString()
+        ]);
+        
+        try {
+            \Log::info('Tentative de connexion à la base de données...');
+            
+            // Test simple de connexion
+            $connectionTest = \DB::connection()->getPdo();
+            \Log::info('Connexion DB réussie', ['database' => \DB::connection()->getDatabaseName()]);
+            
+            // Test de requête simple
+            $userCount = \App\Models\User::count();
+            \Log::info('Test count users', ['count' => $userCount]);
+            
+            $activeUserCount = \App\Models\User::where('status', true)->count();
+            \Log::info('Test count active users', ['count' => $activeUserCount]);
+            
+            \Log::info('Exécution de la requête principale...');
+            $users = \App\Models\User::with('roles')
+                ->where('status', true)
+                ->limit(5)
+                ->get();
+            
+            \Log::info('Utilisateurs récupérés dans route test', [
+                'count' => $users->count(),
+                'memory_usage' => memory_get_usage(true)
+            ]);
+            
+            $transformedUsers = $users->map(function ($user) {
+                try {
+                    return [
+                        'id' => $user->id,
+                        'name' => trim($user->first_name . ' ' . $user->last_name), // Utiliser first_name + last_name
+                        'email' => $user->email,
+                        'roles' => $user->roles->pluck('name'),
+                        'status' => $user->status,
+                        'last_login_at' => $user->last_login_at,
+                        'raw_first_name' => $user->first_name,
+                        'raw_last_name' => $user->last_name
+                    ];
+                } catch (\Exception $e) {
+                    \Log::error('Erreur transformation utilisateur dans route test', [
+                        'user_id' => $user->id,
+                        'error' => $e->getMessage()
+                    ]);
+                    return null;
+                }
+            })->filter();
+            
+            \Log::info('=== ROUTE TEST USERS RÉUSSIE ===', [
+                'final_count' => $transformedUsers->count(),
+                'sample_user' => $transformedUsers->first()
+            ]);
+            
+            return response()->json([
+                'success' => true,
+                'count' => $transformedUsers->count(),
+                'users' => $transformedUsers,
+                'debug_info' => [
+                    'db_connection' => 'OK',
+                    'total_users' => $userCount,
+                    'active_users' => $activeUserCount,
+                    'memory_usage' => memory_get_usage(true),
+                    'timestamp' => now()->toDateTimeString()
+                ]
+            ]);
+            
+        } catch (\Illuminate\Database\QueryException $e) {
+            \Log::error('ERREUR DB ROUTE TEST USERS', [
+                'error' => $e->getMessage(),
+                'sql' => $e->getSql(),
+                'bindings' => $e->getBindings(),
+                'code' => $e->getCode(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'error' => 'Erreur de base de données',
+                'message' => $e->getMessage(),
+                'debug_info' => config('app.debug') ? [
+                    'sql' => $e->getSql(),
+                    'bindings' => $e->getBindings()
+                ] : null
+            ], 500);
+            
+        } catch (\Exception $e) {
+            \Log::error('ERREUR GÉNÉRALE ROUTE TEST USERS', [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'error' => $e->getMessage(),
+                'debug_info' => config('app.debug') ? [
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine()
+                ] : null
+            ], 500);
+        }
+    });
+    
     // Roles
     Route::get('roles', function () {
         return \App\Models\Role::all();
     });
 
-    // Modules, Matieres, Semestres, Cours, Departements
+    // Modules, Matieres, Semestres, Cours, Departements (completely without middleware for debug)
     Route::apiResource('modules', \App\Http\Controllers\Api\V1\ModuleController::class);
     Route::apiResource('matieres', \App\Http\Controllers\Api\V1\MatiereController::class);
     Route::apiResource('semestres', \App\Http\Controllers\Api\V1\SemestreController::class);
     Route::apiResource('cours', \App\Http\Controllers\Api\V1\CoursController::class);
     Route::apiResource('departements', \App\Http\Controllers\Api\V1\DepartementController::class);
+    
+    // Route spécifique pour les cours de l'enseignant (sans auth)
+    Route::get('cours/enseignant', [\App\Http\Controllers\Api\V1\CoursController::class, 'enseignantCours']);
     
     // Devoirs et Soumissions
     Route::apiResource('devoirs', \App\Http\Controllers\Api\V1\DevoirController::class);
@@ -112,6 +227,17 @@ Route::prefix('v1')->group(function () {
     Route::get('teacher/cours', [\App\Http\Controllers\Api\V1\TeacherController::class, 'cours']);
     Route::get('teacher/students', [\App\Http\Controllers\Api\V1\TeacherController::class, 'students']);
     Route::post('teacher/validate-student/{student}', [\App\Http\Controllers\Api\V1\TeacherController::class, 'validateStudent']);
+    
+    // Messagerie
+    Route::apiResource('conversations', \App\Http\Controllers\Api\V1\ConversationController::class);
+    Route::get('conversations/by-matiere/{matiereId}', [\App\Http\Controllers\Api\V1\ConversationController::class, 'getConversationsByMatiere']);
+    Route::get('conversations/{conversation}/messages', [\App\Http\Controllers\Api\V1\ConversationController::class, 'messages']);
+    Route::post('conversations/{conversation}/messages', [\App\Http\Controllers\Api\V1\ConversationController::class, 'sendMessage']);
+    Route::put('conversations/{conversation}/mark-read', [\App\Http\Controllers\Api\V1\ConversationController::class, 'markAsRead']);
+    Route::post('conversations/{conversation}/participants', [\App\Http\Controllers\Api\V1\ConversationController::class, 'addParticipant']);
+    Route::delete('conversations/{conversation}/participants', [\App\Http\Controllers\Api\V1\ConversationController::class, 'removeParticipant']);
+    Route::get('messages/tags', [\App\Http\Controllers\Api\V1\ConversationController::class, 'getTagsPredefinis']);
+    Route::get('messages/by-tag/{tag}', [\App\Http\Controllers\Api\V1\ConversationController::class, 'searchByTag']);
 });
 
 // Protected routes (temporarily removed middleware)

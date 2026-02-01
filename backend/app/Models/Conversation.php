@@ -98,32 +98,110 @@ class Conversation extends Model
 
     public function ajouterParticipant($userId, $role = 'membre')
     {
+        \Log::info('Tentative d\'ajout participant', [
+            'conversation_id' => $this->id,
+            'user_id' => $userId,
+            'role' => $role,
+            'current_participants_count' => $this->participants()->count()
+        ]);
+        
         if (!$this->participants()->where('user_id', $userId)->exists()) {
-            $this->participants()->attach($userId, [
-                'role' => $role,
-                'date_adhesion' => now(),
-                'active' => true
+            try {
+                $this->participants()->attach($userId, [
+                    'role' => $role,
+                    'date_adhesion' => now(),
+                    'active' => true
+                ]);
+                $this->increment('nombre_participants');
+                
+                \Log::info('Participant ajouté avec succès', [
+                    'conversation_id' => $this->id,
+                    'user_id' => $userId,
+                    'role' => $role,
+                    'new_participants_count' => $this->fresh()->nombre_participants
+                ]);
+            } catch (\Exception $e) {
+                \Log::error('Erreur lors de l\'ajout du participant', [
+                    'conversation_id' => $this->id,
+                    'user_id' => $userId,
+                    'role' => $role,
+                    'error' => $e->getMessage()
+                ]);
+                throw $e;
+            }
+        } else {
+            \Log::warning('Participant déjà existant', [
+                'conversation_id' => $this->id,
+                'user_id' => $userId,
+                'role' => $role
             ]);
-            $this->increment('nombre_participants');
         }
     }
 
     public function retirerParticipant($userId)
     {
+        \Log::info('Tentative de retrait participant', [
+            'conversation_id' => $this->id,
+            'user_id' => $userId,
+            'current_participants_count' => $this->participants()->count()
+        ]);
+        
         if ($this->participants()->where('user_id', $userId)->exists()) {
-            $this->participants()->updateExistingPivot($userId, ['active' => false]);
-            $this->decrement('nombre_participants');
+            try {
+                $this->participants()->updateExistingPivot($userId, ['active' => false]);
+                $this->decrement('nombre_participants');
+                
+                \Log::info('Participant retiré avec succès', [
+                    'conversation_id' => $this->id,
+                    'user_id' => $userId,
+                    'new_participants_count' => $this->fresh()->nombre_participants
+                ]);
+            } catch (\Exception $e) {
+                \Log::error('Erreur lors du retrait du participant', [
+                    'conversation_id' => $this->id,
+                    'user_id' => $userId,
+                    'error' => $e->getMessage()
+                ]);
+                throw $e;
+            }
+        } else {
+            \Log::warning('Participant non trouvé pour retrait', [
+                'conversation_id' => $this->id,
+                'user_id' => $userId
+            ]);
         }
     }
 
     public function mettreAJourDernierMessage($contenu, $auteur)
     {
-        $this->update([
-            'dernier_message_date' => now(),
-            'dernier_message_contenu' => substr($contenu, 0, 100),
-            'dernier_message_auteur' => $auteur
+        \Log::info('Mise à jour dernier message', [
+            'conversation_id' => $this->id,
+            'auteur' => $auteur,
+            'contenu_length' => strlen($contenu),
+            'current_messages_count' => $this->nombre_messages
         ]);
-        $this->increment('nombre_messages');
+        
+        try {
+            $this->update([
+                'dernier_message_date' => now(),
+                'dernier_message_contenu' => substr($contenu, 0, 100),
+                'dernier_message_auteur' => $auteur
+            ]);
+            $this->increment('nombre_messages');
+            
+            \Log::info('Dernier message mis à jour avec succès', [
+                'conversation_id' => $this->id,
+                'new_messages_count' => $this->fresh()->nombre_messages,
+                'dernier_message_auteur' => $auteur
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Erreur lors de la mise à jour du dernier message', [
+                'conversation_id' => $this->id,
+                'auteur' => $auteur,
+                'error' => $e->getMessage()
+            ]);
+            throw $e;
+        }
     }
 
     public function estParticipant($userId)

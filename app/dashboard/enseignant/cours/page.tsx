@@ -29,7 +29,7 @@ function CoursPage() {
 
     const fetchCours = async () => {
         try {
-            const response = await axios.get('/v1/cours/enseignant');
+            const response = await axios.get('/v1/cours'); // Changé de /v1/cours/enseignant à /v1/cours
             setCours(response.data || []);
         } catch (error) {
             console.error('Erreur lors du chargement des cours:', error);
