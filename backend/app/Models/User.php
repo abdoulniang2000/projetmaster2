@@ -131,6 +131,18 @@ class User extends Authenticatable
         return $this->hasMany(Note::class, 'evaluateur_id');
     }
 
+    public function notes()
+    {
+        return $this->hasManyThrough(
+            Note::class,
+            Soumission::class,
+            'etudiant_id',
+            'soumission_id',
+            'id',
+            'id'
+        );
+    }
+
     public function messagesEnvoyes()
     {
         return $this->hasMany(Message::class, 'expediteur_id');

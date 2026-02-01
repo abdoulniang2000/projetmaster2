@@ -172,7 +172,29 @@ function ModulesManagementPage() {
                     console.log('Rechargement des modules...');
                     const modulesRes = await axios.get('/v1/modules');
                     console.log('Modules rechargés:', modulesRes.data);
-                    setModules(modulesRes.data || []);
+                    const modulesData = modulesRes.data || [];
+                    setModules(modulesData);
+
+                    // Recalculer les statistiques
+                    const uniqueCours = new Set(modulesData.map((m: Module) => m.cours_id)).size;
+                    const totalOrder = modulesData.reduce((acc: number, m: Module) => acc + (m.ordre || 0), 0);
+                    const modulesByCours = modulesData.reduce((acc: any, m: Module) => {
+                        acc[m.cours_id] = (acc[m.cours_id] || 0) + 1;
+                        return acc;
+                    }, {});
+
+                    setStats({
+                        total_modules: modulesData.length,
+                        total_cours: uniqueCours,
+                        total_modules_by_cours: modulesByCours,
+                        average_order: modulesData.length > 0 ? Math.round(totalOrder / modulesData.length) : 0
+                    });
+
+                    console.log('Statistiques mises à jour:', {
+                        total_modules: modulesData.length,
+                        total_cours: uniqueCours,
+                        modules_by_cours: modulesByCours
+                    });
                 } catch (error) {
                     console.error('Erreur lors du rechargement des modules:', error);
                 }
@@ -198,18 +220,21 @@ function ModulesManagementPage() {
         }
     }, [activeTab, loading]);
 
-    // Ajouter un useEffect pour recharger les semestres et modules quand l'onglet matières devient actif
+    // Ajouter un useEffect pour recharger les matières quand l'onglet matières devient actif
     useEffect(() => {
         if (activeTab === 'matieres' && !loading) {
             const refreshMatieresData = async () => {
                 try {
                     console.log('Rechargement des données pour matières...');
-                    const [semestresRes, modulesRes] = await Promise.all([
+                    const [matieresRes, semestresRes, modulesRes] = await Promise.all([
+                        axios.get('/v1/matieres'),
                         axios.get('/v1/semestres'),
                         axios.get('/v1/modules')
                     ]);
+                    console.log('Matières rechargées:', matieresRes.data);
                     console.log('Semestres rechargés:', semestresRes.data);
                     console.log('Modules rechargés:', modulesRes.data);
+                    setMatieres(matieresRes.data || []);
                     setSemestres(semestresRes.data || []);
                     setModules(modulesRes.data || []);
                 } catch (error) {
@@ -433,6 +458,51 @@ function ModulesManagementPage() {
                     <p className="text-gray-600 mt-2">Gérez les modules, matières et semestres</p>
                 </div>
                 <div className="flex items-center space-x-3">
+                    <button
+                        onClick={async () => {
+                            try {
+                                console.log('Rafraîchissement manuel des statistiques...');
+                                const [modulesRes, matieresRes, semestresRes] = await Promise.all([
+                                    axios.get('/v1/modules'),
+                                    axios.get('/v1/matieres'),
+                                    axios.get('/v1/semestres')
+                                ]);
+
+                                const modulesData = modulesRes.data || [];
+                                setModules(modulesData);
+                                setMatieres(matieresRes.data || []);
+                                setSemestres(semestresRes.data || []);
+
+                                // Recalculer les statistiques
+                                const uniqueCours = new Set(modulesData.map((m: Module) => m.cours_id)).size;
+                                const totalOrder = modulesData.reduce((acc: number, m: Module) => acc + (m.ordre || 0), 0);
+                                const modulesByCours = modulesData.reduce((acc: any, m: Module) => {
+                                    acc[m.cours_id] = (acc[m.cours_id] || 0) + 1;
+                                    return acc;
+                                }, {});
+
+                                setStats({
+                                    total_modules: modulesData.length,
+                                    total_cours: uniqueCours,
+                                    total_modules_by_cours: modulesByCours,
+                                    average_order: modulesData.length > 0 ? Math.round(totalOrder / modulesData.length) : 0
+                                });
+
+                                console.log('Statistiques rafraîchies:', {
+                                    total_modules: modulesData.length,
+                                    total_cours: uniqueCours,
+                                    matieres: matieresRes.data?.length,
+                                    semestres: semestresRes.data?.length
+                                });
+                            } catch (error) {
+                                console.error('Erreur lors du rafraîchissement:', error);
+                            }
+                        }}
+                        className="btn-gradient-secondary px-4 py-2 rounded-lg font-medium flex items-center space-x-2"
+                    >
+                        <RefreshCw className="w-4 h-4" />
+                        <span>Rafraîchir</span>
+                    </button>
                     <button
                         onClick={() => exportData(activeTab)}
                         className="btn-gradient-secondary flex items-center space-x-2"
