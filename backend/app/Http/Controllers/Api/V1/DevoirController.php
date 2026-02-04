@@ -21,17 +21,39 @@ class DevoirController extends Controller
         return Devoir::with('cours')->get();
     }
 
+    public function enseignantDevoirs(Request $request)
+    {
+        $user = $request->user();
+        $coursIds = $user->coursEnseignes()->pluck('id');
+        $devoirs = Devoir::whereIn('cours_id', $coursIds)->with('cours')->get();
+
+        return response()->json($devoirs);
+    }
+
     public function store(StoreDevoirRequest $request)
     {
-        $data = $request->validated();
+        \Log::info('Début de la création du devoir.');
+        try {
+            $data = $request->validated();
+            \Log::info('Données validées:', $data);
 
-        if ($request->hasFile('fichier_joint')) {
-            $data['fichier_joint'] = $request->file('fichier_joint')->store('devoirs', 'public');
+            if ($request->hasFile('fichier_joint')) {
+                \Log::info('Téléversement du fichier joint.');
+                $data['fichier_joint'] = $request->file('fichier_joint')->store('devoirs', 'public');
+                \Log::info('Fichier stocké à l\'adresse: ' . $data['fichier_joint']);
+            }
+
+            $devoir = Devoir::create($data);
+            \Log::info('Devoir créé avec succès:', ['devoir_id' => $devoir->id]);
+
+            return response()->json($devoir, 201);
+        } catch (\Exception $e) {
+            \Log::error('Erreur lors de la création du devoir:', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return response()->json(['message' => 'Une erreur est survenue lors de la création du devoir.'], 500);
         }
-
-        $devoir = Devoir::create($data);
-
-        return response()->json($devoir, 201);
     }
 
     public function show(Devoir $devoir)

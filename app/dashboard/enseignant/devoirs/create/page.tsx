@@ -34,8 +34,8 @@ function CreateDevoirPage() {
 
     const fetchCours = async () => {
         try {
-            const response = await axios.get('/v1/cours/enseignant');
-            setCours(response.data || []);
+            const response = await axios.get('/v1/supports/cours/list');
+            setCours(response.data.data || []);
         } catch (error) {
             console.error('Erreur lors du chargement des cours:', error);
         }

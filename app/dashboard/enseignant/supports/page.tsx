@@ -9,12 +9,13 @@ import Link from 'next/link';
 interface Support {
     id: number;
     titre: string;
-    type: 'document' | 'image' | 'video' | 'archive';
-    fichier: string;
-    taille: number;
+    type: 'document' | 'image' | 'video' | 'archive' | 'pdf' | 'ppt';
+    fichier_path: string;
+    fichier_taille: string;
     cours_id: number;
-    cours_nom: string;
+    cours: { id: number; nom: string; };
     created_at: string;
+    date_ajout: string;
 }
 
 interface Cours {
@@ -29,8 +30,12 @@ function SupportsPage() {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedCours, setSelectedCours] = useState<number | null>(null);
     const [showUploadModal, setShowUploadModal] = useState(false);
+    const [isUploading, setIsUploading] = useState(false);
+    const [uploadErrors, setUploadErrors] = useState<any>({});
     const [uploadData, setUploadData] = useState({
         titre: '',
+        description: '',
+        type: 'document',
         cours_id: '',
         fichier: null as File | null
     });
@@ -42,11 +47,11 @@ function SupportsPage() {
     const fetchData = async () => {
         try {
             const [supportsRes, coursRes] = await Promise.all([
-                axios.get('/v1/supports/enseignant'),
-                axios.get('/v1/cours/enseignant')
+                axios.get('/v1/supports'), // Assuming this gets all supports for the view
+                axios.get('/v1/supports/cours/list') // Correct endpoint for the dropdown
             ]);
             setSupports(supportsRes.data || []);
-            setCours(coursRes.data || []);
+            setCours(coursRes.data.data || []); // The courses are in the 'data' property
         } catch (error) {
             console.error('Erreur lors du chargement:', error);
         } finally {
@@ -56,10 +61,18 @@ function SupportsPage() {
 
     const handleFileUpload = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!uploadData.fichier) return;
+        if (!uploadData.fichier) {
+            setUploadErrors({ fichier: ['Le fichier est requis.'] });
+            return;
+        }
+
+        setIsUploading(true);
+        setUploadErrors({});
 
         const formData = new FormData();
         formData.append('titre', uploadData.titre);
+        formData.append('description', uploadData.description);
+        formData.append('type', uploadData.type);
         formData.append('cours_id', uploadData.cours_id);
         formData.append('fichier', uploadData.fichier);
 
@@ -68,11 +81,27 @@ function SupportsPage() {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
             setShowUploadModal(false);
-            setUploadData({ titre: '', cours_id: '', fichier: null });
+            setUploadData({ titre: '', description: '', type: 'document', cours_id: '', fichier: null });
             fetchData();
-        } catch (error) {
-            console.error('Erreur lors de l\'upload:', error);
+        } catch (error: any) {
+            if (error.response && error.response.status === 422) {
+                setUploadErrors(error.response.data.errors);
+                console.error('Erreurs de validation:', error.response.data.errors);
+            } else {
+                console.error('Erreur lors de l\'upload:', error);
+                setUploadErrors({ form: ['Une erreur inattendue est survenue.'] });
+            }
+        } finally {
+            setIsUploading(false);
         }
+    };
+
+    const handleCancelUpload = () => {
+        // Log cancellation in the background without blocking the UI
+        axios.post('/v1/supports/cancel-upload').catch(error => {
+            console.error('Erreur lors de la journalisation de l\'annulation:', error);
+        });
+        setShowUploadModal(false);
     };
 
     const handleDelete = async (id: number) => {
@@ -246,11 +275,11 @@ function SupportsPage() {
                                             <div>
                                                 <h3 className="text-lg font-medium text-gray-900">{support.titre}</h3>
                                                 <div className="flex items-center space-x-4 text-sm text-gray-500 mt-1">
-                                                    <span>{support.cours_nom}</span>
+                                                    <span>{support.cours.nom}</span>
                                                     <span>•</span>
-                                                    <span>{formatFileSize(support.taille)}</span>
+                                                    <span>{support.fichier_taille}</span>
                                                     <span>•</span>
-                                                    <span>{new Date(support.created_at).toLocaleDateString('fr-FR')}</span>
+                                                    <span>{new Date(support.date_ajout).toLocaleDateString('fr-FR')}</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -285,9 +314,7 @@ function SupportsPage() {
                         </h3>
                         <form onSubmit={handleFileUpload} className="space-y-4">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Titre
-                                </label>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Titre</label>
                                 <input
                                     type="text"
                                     value={uploadData.titre}
@@ -295,11 +322,10 @@ function SupportsPage() {
                                     className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                                     required
                                 />
+                                {uploadErrors.titre && <p className="text-red-500 text-sm mt-1">{uploadErrors.titre[0]}</p>}
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Cours
-                                </label>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Cours</label>
                                 <select
                                     value={uploadData.cours_id}
                                     onChange={(e) => setUploadData(prev => ({ ...prev, cours_id: e.target.value }))}
@@ -311,38 +337,62 @@ function SupportsPage() {
                                         <option key={c.id} value={c.id}>{c.nom}</option>
                                     ))}
                                 </select>
+                                {uploadErrors.cours_id && <p className="text-red-500 text-sm mt-1">{uploadErrors.cours_id[0]}</p>}
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Fichier
-                                </label>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                                <textarea
+                                    value={uploadData.description}
+                                    onChange={(e) => setUploadData(prev => ({ ...prev, description: e.target.value }))}
+                                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                                {uploadErrors.description && <p className="text-red-500 text-sm mt-1">{uploadErrors.description[0]}</p>}
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Fichier</label>
                                 <input
                                     type="file"
-                                    onChange={(e) => setUploadData(prev => ({ ...prev, fichier: e.target.files?.[0] || null }))}
+                                    onChange={(e) => {
+                                        const file = e.target.files?.[0] || null;
+                                        if (file) {
+                                            const extension = file.name.split('.').pop()?.toLowerCase();
+                                            let type = 'document'; // Default type
+                                            if (['pdf'].includes(extension!)) type = 'pdf';
+                                            if (['ppt', 'pptx'].includes(extension!)) type = 'ppt';
+                                            if (['jpg', 'jpeg', 'png', 'gif'].includes(extension!)) type = 'image';
+                                            if (['mp4', 'avi', 'mov'].includes(extension!)) type = 'video';
+                                            setUploadData(prev => ({ ...prev, fichier: file, type: type as any }));
+                                        } else {
+                                            setUploadData(prev => ({ ...prev, fichier: null }));
+                                        }
+                                    }}
                                     className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                                     required
                                 />
+                                {uploadErrors.fichier && <p className="text-red-500 text-sm mt-1">{uploadErrors.fichier[0]}</p>}
                             </div>
                             <div className="flex justify-end space-x-3 pt-4">
+                                {uploadErrors.form && <p className="text-red-500 text-sm mt-2">{uploadErrors.form[0]}</p>}
                                 <button
                                     type="button"
-                                    onClick={() => setShowUploadModal(false)}
+                                    onClick={handleCancelUpload}
                                     className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
                                 >
                                     Annuler
                                 </button>
                                 <button
                                     type="submit"
-                                    className="px-4 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+                                    className="px-4 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:bg-blue-300"
+                                    disabled={isUploading}
                                 >
-                                    Ajouter
+                                    {isUploading ? 'Ajout en cours...' : 'Ajouter'}
                                 </button>
                             </div>
                         </form>
                     </div>
                 </div>
             )}
-        </div>
+        </div >
     );
 }
 

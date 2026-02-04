@@ -43,7 +43,7 @@ function DevoirsPage() {
                 axios.get('/v1/devoirs/enseignant'),
                 axios.get('/v1/cours/enseignant')
             ]);
-            setDevoirs(devoirsRes.data || []);
+            setDevoirs(devoirsRes.data.devoirs || []);
             setCours(coursRes.data || []);
         } catch (error) {
             console.error('Erreur lors du chargement:', error);

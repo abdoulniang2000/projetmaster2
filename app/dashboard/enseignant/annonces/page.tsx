@@ -79,6 +79,15 @@ function AnnoncesPage() {
         }
     };
 
+    const handlePublish = async (id: number) => {
+        try {
+            await axios.post(`/v1/annonces/${id}/publish`);
+            fetchData();
+        } catch (error) {
+            console.error('Erreur lors de la publication:', error);
+        }
+    };
+
     const handleDelete = async (id: number) => {
         try {
             await axios.delete(`/v1/annonces/${id}`);
@@ -290,8 +299,8 @@ function AnnoncesPage() {
                                             </div>
                                         </div>
                                         <div className="flex items-center space-x-2 ml-4">
-                                            <button className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
-                                                <Eye className="w-4 h-4" />
+                                            <button onClick={() => handlePublish(annonce.id)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+                                                <Send className="w-4 h-4" />
                                             </button>
                                             <button className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
                                                 <Edit className="w-4 h-4" />

@@ -191,8 +191,6 @@ Route::prefix('v1')->group(function () {
     Route::apiResource('cours', \App\Http\Controllers\Api\V1\CoursController::class);
     Route::apiResource('departements', \App\Http\Controllers\Api\V1\DepartementController::class);
     
-    // Route spécifique pour les cours de l'enseignant (sans auth)
-    Route::get('cours/enseignant', [\App\Http\Controllers\Api\V1\CoursController::class, 'enseignantCours']);
     
     // Devoirs et Soumissions
     Route::apiResource('devoirs', \App\Http\Controllers\Api\V1\DevoirController::class);
@@ -207,8 +205,14 @@ Route::prefix('v1')->group(function () {
     Route::apiResource('fichiers', \App\Http\Controllers\Api\V1\FichierController::class);
     Route::get('fichiers/{fichier}/download', [\App\Http\Controllers\Api\V1\FichierController::class, 'download']);
     
+    // Supports pédagogiques
+    Route::get('supports', [\App\Http\Controllers\Api\SupportController::class, 'index']);
+    Route::get('supports/cours/list', [\App\Http\Controllers\Api\SupportController::class, 'getCours']);
+    Route::get('supports/{support}', [\App\Http\Controllers\Api\SupportController::class, 'show']);
+    
     // Annonces
-    Route::apiResource('annonces', \App\Http\Controllers\Api\V1\AnnonceController::class);
+    Route::get('annonces', [\App\Http\Controllers\Api\V1\AnnonceController::class, 'index']);
+    Route::get('annonces/{annonce}', [\App\Http\Controllers\Api\V1\AnnonceController::class, 'show']);
     
     // Forums et Discussions
     Route::apiResource('forums', \App\Http\Controllers\Api\V1\ForumController::class);
@@ -238,12 +242,31 @@ Route::prefix('v1')->group(function () {
     Route::delete('conversations/{conversation}/participants', [\App\Http\Controllers\Api\V1\ConversationController::class, 'removeParticipant']);
     Route::get('messages/tags', [\App\Http\Controllers\Api\V1\ConversationController::class, 'getTagsPredefinis']);
     Route::get('messages/by-tag/{tag}', [\App\Http\Controllers\Api\V1\ConversationController::class, 'searchByTag']);
-});
 
-// Protected routes (temporarily removed middleware)
-Route::middleware('auth:sanctum')->group(function () {
-    Route::post('/logout', [AuthController::class, 'logout']);
-    Route::get('/user', function (Request $request) {
-        return $request->user();
+    // Protected routes
+    Route::middleware('auth:sanctum')->group(function () {
+        // Route spécifique pour les cours de l'enseignant
+        Route::get('cours/enseignant', [\App\Http\Controllers\Api\V1\CoursController::class, 'enseignantCours']);
+        Route::get('devoirs/enseignant', [\App\Http\Controllers\Api\V1\DevoirController::class, 'enseignantDevoirs']);
+        Route::get('annonces/enseignant', [\App\Http\Controllers\Api\V1\AnnonceController::class, 'enseignantAnnonces']);
+        Route::post('/logout', [AuthController::class, 'logout']);
+        Route::get('/user', function (Request $request) {
+            return $request->user();
+        });
+
+        // Supports pédagogiques - Protected routes
+        Route::post('supports', [\App\Http\Controllers\Api\SupportController::class, 'store']);
+        Route::put('supports/{support}', [\App\Http\Controllers\Api\SupportController::class, 'update']);
+        Route::patch('supports/{support}', [\App\Http\Controllers\Api\SupportController::class, 'update']);
+        Route::delete('supports/{support}', [\App\Http\Controllers\Api\SupportController::class, 'destroy']);
+        Route::get('supports/{support}/download', [\App\Http\Controllers\Api\SupportController::class, 'download']);
+        Route::post('supports/cancel-upload', [\App\Http\Controllers\Api\SupportController::class, 'logCancel']);
+
+        // Annonces - Protected routes
+        Route::post('annonces', [\App\Http\Controllers\Api\V1\AnnonceController::class, 'store']);
+        Route::put('annonces/{annonce}', [\App\Http\Controllers\Api\V1\AnnonceController::class, 'update']);
+        Route::patch('annonces/{annonce}', [\App\Http\Controllers\Api\V1\AnnonceController::class, 'update']);
+        Route::delete('annonces/{annonce}', [\App\Http\Controllers\Api\V1\AnnonceController::class, 'destroy']);
+        Route::post('annonces/{annonce}/publish', [\App\Http\Controllers\Api\V1\AnnonceController::class, 'publish']);
     });
 });

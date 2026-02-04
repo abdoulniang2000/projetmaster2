@@ -34,16 +34,18 @@ class CoursController extends Controller
         }
     }
 
-    public function enseignantCours()
+    public function enseignantCours(Request $request)
     {
-        \Log::info('=== ENSEIGNANT COURS APPELÉ ===');
         try {
-            $cours = Cours::with('enseignant')->get();
-            \Log::info('Cours enseignant récupérés:', ['count' => $cours->count()]);
+            $user = $request->user();
+            if (!$user) {
+                return response()->json(['message' => 'Utilisateur non authentifié.'], 401);
+            }
+
+            $cours = Cours::where('enseignant_id', $user->id)->get();
             return response()->json($cours);
         } catch (\Exception $e) {
-            \Log::error('Erreur dans enseignant cours:', ['error' => $e->getMessage()]);
-            return response()->json(['error' => $e->getMessage()], 500);
+            return response()->json(['error' => 'Une erreur est survenue lors de la récupération des cours.'], 500);
         }
     }
 

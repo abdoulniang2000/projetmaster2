@@ -12,17 +12,11 @@ class Devoir extends Model
     use HasFactory;
 
     protected $fillable = [
+        'cours_id',
         'titre',
         'description',
-        'type',
-        'cours_id',
-        'instructeur_id',
-        'date_publication',
         'date_limite',
-        'ponderation',
-        'instructions',
-        'fichier_instructions_path',
-        'visible'
+        'fichier_joint'
     ];
 
     protected $casts = [

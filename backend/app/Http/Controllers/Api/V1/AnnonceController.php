@@ -9,9 +9,16 @@ use Illuminate\Support\Facades\Auth;
 
 class AnnonceController extends Controller
 {
+    public function enseignantAnnonces(Request $request)
+    {
+        $user = $request->user();
+        $annonces = Annonce::where('enseignant_id', $user->id)->with(['enseignant', 'cours'])->latest()->get();
+        return response()->json($annonces);
+    }
+
     public function index(Request $request)
     {
-        $query = Annonce::with(['createur', 'cours'])
+        $query = Annonce::with(['enseignant', 'cours'])
                        ->active()
                        ->publie()
                        ->latest();
@@ -32,48 +39,53 @@ class AnnonceController extends Controller
         $request->validate([
             'titre' => 'required|string|max:255',
             'contenu' => 'required|string',
-            'type' => 'required|in:general,cours,urgence',
-            'cours_id' => 'nullable|exists:cours,id'
+            'type' => 'required|in:general,cours,urgent',
+            'cours_id' => 'nullable|exists:cours,id',
+            'date_expiration' => 'nullable|date'
         ]);
 
         $annonce = Annonce::create([
             'titre' => $request->titre,
             'contenu' => $request->contenu,
             'type' => $request->type,
-            'cours_id' => $request->cours_id,
-            'created_by' => Auth::id(),
-            'published_at' => now()
+            'cours_id' => $request->type === 'cours' ? $request->cours_id : null,
+            'enseignant_id' => Auth::id(),
+            'date_publication' => now(),
+            'date_expiration' => $request->date_expiration,
+            'active' => true
         ]);
 
-        return response()->json($annonce->load('createur'), 201);
+        return response()->json($annonce->load('enseignant'), 201);
     }
 
     public function show(Annonce $annonce)
     {
-        return response()->json($annonce->load(['createur', 'cours']));
+        return response()->json($annonce->load(['enseignant', 'cours']));
     }
 
     public function update(Request $request, Annonce $annonce)
     {
-        if ($annonce->created_by !== Auth::id() && !Auth::user()->estAdmin()) {
+        if ($annonce->enseignant_id !== Auth::id() && !Auth::user()->estAdmin()) {
             return response()->json(['error' => 'Non autorisé'], 403);
         }
 
-        $request->validate([
-            'titre' => 'required|string|max:255',
-            'contenu' => 'required|string',
-            'type' => 'required|in:general,cours,urgence',
-            'is_active' => 'boolean'
+        $validated = $request->validate([
+            'titre' => 'sometimes|string|max:255',
+            'contenu' => 'sometimes|string',
+            'type' => 'sometimes|in:general,cours,urgent',
+            'cours_id' => 'nullable|exists:cours,id',
+            'date_expiration' => 'nullable|date',
+            'active' => 'sometimes|boolean'
         ]);
 
-        $annonce->update($request->all());
+        $annonce->update($validated);
 
-        return response()->json($annonce->load('createur'));
+        return response()->json($annonce->load('enseignant'));
     }
 
     public function destroy(Annonce $annonce)
     {
-        if ($annonce->created_by !== Auth::id() && !Auth::user()->estAdmin()) {
+        if ($annonce->enseignant_id !== Auth::id() && !Auth::user()->estAdmin()) {
             return response()->json(['error' => 'Non autorisé'], 403);
         }
 
@@ -84,15 +96,15 @@ class AnnonceController extends Controller
 
     public function publish(Annonce $annonce)
     {
-        if ($annonce->created_by !== Auth::id() && !Auth::user()->estAdmin()) {
+        if ($annonce->enseignant_id !== Auth::id() && !Auth::user()->estAdmin()) {
             return response()->json(['error' => 'Non autorisé'], 403);
         }
 
         $annonce->update([
-            'is_active' => true,
-            'published_at' => now()
+            'active' => true,
+            'date_publication' => now()
         ]);
 
-        return response()->json($annonce->load('createur'));
+        return response()->json($annonce->load('enseignant'));
     }
 }
